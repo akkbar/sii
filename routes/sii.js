@@ -9,6 +9,10 @@ router.get('/dashboard', isAuthenticated, siiController.getDashboard)
 
 router.get('/sampah', isAuthenticated, siiController.sampah)
 router.post('/sampah', isAuthenticated, siiController.sampahAjax)
+router.post('/trash_manifest', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.trashManifest)
+
+router.get('/dataKanban', isAuthenticated, siiController.dataKanban)
+router.post('/dataKanban', isAuthenticated, siiController.dataKanbanAjax)
 
 // router.get('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSet)
 // router.post('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAjax)

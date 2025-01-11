@@ -39,7 +39,7 @@
 	</section>
     <div class="modal fade" id="kosongkan">
         <div class="modal-dialog">
-        <form action="<?php echo base_url(); ?>shiroki_trash_manifest" method="POST">
+        <form action="/sii/trash_manifest" method="POST">
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">Kosongkan Tempat Sampah</h4>
@@ -50,7 +50,7 @@
                     Apakah anda yakin ingin menghapus seluruh isi tempat sampah ?
                 </div>
                 <div class="modal-footer justify-content-between">
-                    <input type="hidden" name="tid" value="<?php echo $this->encrypt_model->my_encrypt(date('U')); ?>">
+                    <input type="hidden" name="tid" value="<%= data.tid %>">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-danger"><i class="fa fa-check"></i> Kosongkan</button>
                 </div>
