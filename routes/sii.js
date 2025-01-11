@@ -6,6 +6,10 @@ const authorizeRoles = require('../middlewares/authorizeRoles');
 
 router.get('/dashboard', isAuthenticated, siiController.getDashboard)
 
+
+router.get('/sampah', isAuthenticated, siiController.sampah)
+router.post('/sampah', isAuthenticated, siiController.sampahAjax)
+
 // router.get('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSet)
 // router.post('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAjax)
 // router.post('/shiftSetAdd', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAdd)

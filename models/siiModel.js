@@ -153,6 +153,46 @@ class siiModel {
     }
 
 
+    //====================================================================================================================
+	//====================================================================================================================
+    //MANIFEST SAMPAH
+    //====================================================================================================================
+	//====================================================================================================================
+    _sampahList(filters, columnSearches) {
+        let query = siiDb('manifest_data')
+            .select('*')
+            .select(siiDb.raw('AVG(proses) as prog'))
+            .where({isvalid: 0})
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        query.groupBy('manifest')
+        return query
+    }
+    async sampahList(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._sampahList(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async sampahListFiltered(filters, columnSearches) {
+        let query = this._sampahList(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async sampahListCountAll() {
+        let query = siiDb('manifest_data').where({isvalid: 0}).groupBy('manifest')
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+	//====================================================================================================================
+
 }
 
 module.exports = new siiModel();

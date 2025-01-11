@@ -662,63 +662,7 @@ class Shiroki_model extends CI_Model{
     //====================================================================================================================
     //====================================================================================================================
     
-    //====================================================================================================================
-	//====================================================================================================================
-	var $manifest_bin_data_order = array(null, 'manifest', 'order_no', 'avg(proses)', 'na7', 'dock_code', null);
-    var $manifest_bin_data_search = array('manifest', 'order_no');
-	var $manifest_bin_data_def_order = array('manifest'=> 'desc');
-	private function _get_manifest_bin_data_dt($plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->select('*, avg(proses) as prog');
-		$this->db2->from('shiroki_manifest_shiroki');
-		$this->db2->where('plant_id', $plant_id);
-		$this->db2->where('isvalid', 0);
-        $i = 0;
-        foreach ($this->manifest_bin_data_search as $item){
-            if($_POST['search']['value']){
-                if($i===0){
-                    $this->db2->group_start();
-                    $this->db2->like($item, $_POST['search']['value']);
-                }
-                else{
-                    $this->db2->or_like($item, $_POST['search']['value']);
-                }
-                if(count($this->manifest_bin_data_search) - 1 == $i)
-                    $this->db2->group_end();
-            }
-            $i++;
-        }
-        if(isset($_POST['order'])){
-            $this->db2->order_by($this->manifest_bin_data_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
-        } 
-        else if(isset($this->manifest_bin_data_def_order)){
-            $order = $this->manifest_bin_data_def_order;
-            $this->db2->order_by(key($order), $order[key($order)]);
-		}
-        $this->db2->group_by('manifest');
-    }
-    public function get_manifest_bin_data_dt($plant_id){
-        $this->_get_manifest_bin_data_dt($plant_id);
-        if($_POST['length'] != -1)
-        $this->db2->limit($_POST['length'], $_POST['start']);
-        $query = $this->db2->get();
-        return $query->result();
-    }
-    public function manifest_bin_data_count_filtered($plant_id){
-        $this->_get_manifest_bin_data_dt($plant_id);
-        $query = $this->db2->get();
-        return $query->num_rows();
-    }
-    public function manifest_bin_data_count_all($plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->from('shiroki_manifest_shiroki');
-        $this->db2->where('plant_id', $plant_id);
-		$this->db2->where('isvalid', 0);
-        $this->db2->group_by('manifest');
-        return $this->db2->count_all_results();
-    }
-    //====================================================================================================================
-	//====================================================================================================================
+    
 	var $log_data_byman_order = array(null, 't1.timestamp', 't1.result', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
     var $log_data_byman_search = array('t1.timestamp', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
 	var $log_data_byman_def_order = array('t1.timestamp'=> 'asc');
