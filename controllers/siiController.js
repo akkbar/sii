@@ -1,10 +1,171 @@
-const cncModel = require('../models/cncModel')
-const cncValidator = require('../middlewares/validate')
+const siiModel = require('../models/siiModel')
 const logError = require('../middlewares/errorlogger')
 const moment = require('moment')
-const { calculateOEEHourly, calculateMachineOEE } = require('../middlewares/cron_calc')
 
+exports.getDashboard = async (req, res) => {
+    const header = {pageTitle: 'Dashboard', user: req.session.user}
 
+    const plantId = req.user.plantId;
+
+    const openManifest = await siiModel.countOpenManifest(plantId);
+    const allManifest = await siiModel.countAllManifest(plantId);
+    const allUser = await siiModel.countAllUser(plantId);
+    const allKanban = await siiModel.countAllKanban(plantId);
+
+    // Simulate the `shiroki_auto_remove` logic if needed
+    const x = await autoRemove();
+
+    // Prepare data for rendering
+    const data = {
+        open_manifest: openManifest.count,
+        all_manifest: allManifest.count,
+        all_user: allUser.count,
+        all_kanban: allKanban.count,
+        x,
+    };
+    res.render('sii/dashboard', {header: header})
+}
+const autoRemove = async (plantId) => {
+    try {
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    
+        const tenDaysAgo = new Date();
+        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+    
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+        // Delete manifest older than 5 days
+        await siiModel.deleteManifestOlderThan(fiveDaysAgo.toISOString(), plantId);
+    
+        // Delete scan records older than 10 days
+        await siiModel.deleteScanOlderThan(tenDaysAgo.toISOString(), plantId);
+    
+        // Update manifest older than 3 days to set `isvalid` = 0
+        await siiModel.editManifestOlderThan(
+            { isvalid: 0 },
+            threeDaysAgo.toISOString(),
+            plantId
+        );
+  
+        return true;
+    } catch (error) {
+        console.error('Error in shirokiAutoRemove:', error);
+        throw error;
+    }
+};
+
+// function shiroki_monitor_manifest(){
+//     $data['manifest_table'] = $this->shiroki_model->monitor_manifest($this->plant_id);
+//     $this->load->view('shiroki/shiroki_monitor_manifest', $data);
+// }
+// function shiroki_monitor_manifest_ajax(){
+//     $list = $this->shiroki_model->get_monman_data_dt($this->plant_id);
+//     $data = array();
+//     $class_row = array();
+//     $no = $_POST['start'];
+//     foreach ($list as $record){
+//         $no++;
+//         $row = array();
+//         $row[] = $no;
+//         $row[] = $record->manifest;
+//         $row[] = round($record->prog, 1);
+//         $row[] = '<div class="progress mb-3">
+//                 <div class="progress-bar bg-success" role="progressbar" aria-valuenow="'.round($record->prog).'" aria-valuemin="0" aria-valuemax="100" style="width: '.round($record->prog, 1).'%">
+//                     <span class="sr-only">'.round($record->prog, 1).'%</span>
+//                 </div>
+//             </div>';
+//         $row[] = date('d-m-Y H:i', strtotime(substr($record->na7, 0, -4)));
+//         $row[] = $record->dock_code;
+//         $data[] = $row;
+//     }
+//     $output = array(
+//         "draw" => $_POST['draw'],
+//         "recordsTotal" => $this->shiroki_model->monman_data_count_all($this->plant_id),
+//         "recordsFiltered" => $this->shiroki_model->monman_data_count_filtered($this->plant_id),
+//         "data" => $data
+//     );
+//     echo json_encode($output);	
+// }
+//==========================================================================================================================
+//==========================================================================================================================
+//MONITOR MANIFEST
+//==========================================================================================================================
+//==========================================================================================================================
+exports.monitorManifest = async (req, res) => {
+    try {
+        const plantId = req.user.plantId; // Assuming `plantId` is retrieved from the authenticated user/session
+
+        // Fetch manifest data
+        const manifestTable = await siiModel.monitorManifest(plantId);
+
+        // Render the view with the retrieved data
+        res.render('sii/monitorManifest', { manifest_table: manifestTable });
+    } catch (error) {
+        console.error('Error in monitorManifest:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
+exports.monitorManifestAjax = async (req, res) => {
+    const filters = {
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        'fullname',
+        'user_role',
+        'last_login',
+        null
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'fullname'
+        
+        const data = await mainModel.userList(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await mainModel.userListFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await mainModel.userListCountAll(),
+            recordsFiltered,
+            data: data.map(record => {
+                return [
+                    record.fullname,
+                    record.user_role,
+                    record.last_login,
+                    `<button class="btn btn-sm btn-primary" onclick="show_modal('${record.id}')"><i class="fa fa-pencil-alt"></i> Edit</button>
+                    ${
+                        record.user_role !== 'Admin' 
+                            ? `<button class="btn btn-sm btn-danger" onclick="delete_modal('${record.id}')">
+                                   <i class="fa fa-trash-alt"></i> Delete
+                               </button>`
+                            : ''
+                    }`
+                ];
+            })
+        };
+
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
 //==========================================================================================================================
 //==========================================================================================================================
 //SHIFT SETTING

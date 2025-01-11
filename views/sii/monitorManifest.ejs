@@ -1,0 +1,46 @@
+<table class="table">
+    <tr>
+      <th>NO.</th>
+      <th>MANIFEST</th>
+      <th colspan="2">PROGRESS</th>
+      <th>ETD</th>
+      <th>DOCK CODE</th>
+    </tr>
+    <% 
+      let a = 1; // Counter for row numbering
+      if (manifest_table.length > 0) {
+        manifest_table.forEach((row) => { 
+    %>
+      <tr>
+        <td><%= a %></td>
+        <td>
+          <a href="/log_manifest/<%= row.manifest %>" 
+             class="btn btn-sm btn-primary">
+            <%= row.manifest %>
+          </a>
+        </td>
+        <td><%= Math.round(row.prog * 10) / 10 %>%</td>
+        <td style="min-width: 100px;">
+          <div class="progress mb-3">
+            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="<%= Math.round(row.prog) %>" 
+                 aria-valuemin="0" aria-valuemax="100" 
+                 style="width: <%= Math.round(row.prog * 10) / 10 %>%">
+              <span class="sr-only"><%= Math.round(row.prog * 10) / 10 %>%</span>
+            </div>
+          </div>
+        </td>
+        <td><%= new Date(row.na7.substring(0, row.na7.length - 4)).toLocaleString('en-GB', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit' 
+                }) 
+            %>
+        </td>
+        <td><%= row.dock_code %></td>
+      </tr>
+    <% 
+          a++;
+        });
+      } 
+    %>
+  </table>
+  

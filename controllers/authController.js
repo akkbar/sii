@@ -102,7 +102,7 @@ exports.registerUser = async (req, res) => {
 
 exports.errorLogs = async (req, res) => {
     try {
-        const header = {pageTitle: 'Dashboard', user: req.session.user}
+        const header = {pageTitle: 'Error Logs', user: req.session.user}
         const errorLogs = await ErrorLog.find().sort({ timestamp: -1 });
         const data = {
             errorLogs: errorLogs

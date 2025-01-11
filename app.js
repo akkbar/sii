@@ -38,15 +38,7 @@ app.use(
 
 
 const server = http.createServer(app)
-const io = socketIo(server)
-io.on('connection', (socket) => {
-  console.log('A user connected')
-  socket.on('disconnect', () => {
-      console.log('A user disconnected')
-  })
-})
 
-machineStatusUpdater(io)
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, 'public')))
@@ -66,12 +58,19 @@ app.use('/sii', siiRoutes);
 
 app.get('/', (req, res) => {
     if (req.session.user) {
-      res.redirect('/sii/dashboard')
+      res.redirect('/dashboard')
     } else {
       res.redirect('/login')
     }
 })
 
+app.get('/dashboard', (req, res) => {
+  if (req.session.user) {
+    res.redirect('/sii/dashboard')
+  } else {
+    res.redirect('/login')
+  }
+})
 
 app.use((req, res) => {
     res.status(404).render('404', { message: 'Page not found' })
@@ -82,7 +81,7 @@ app.use((err, req, res, next) => {
   res.status(500).render('500', { message: 'Internal Server Error' });
 })
 
-server.listen(3000, '::', () => {
+server.listen(3001, '::', () => {
     console.log('Server running on http://localhost/')
 })
 

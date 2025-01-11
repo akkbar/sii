@@ -4,63 +4,6 @@ const mainDb = require('../models/mainDb');
 class mainModel {
     //===================================================================================================================================
     //===================================================================================================================================
-    //MACHINE GROUPING CATEGORY
-    //===================================================================================================================================
-    //===================================================================================================================================
-    // async addMachineGroup(data) {
-    //     try {
-    //         await cncDb.transaction(async trx => {
-    //             await trx('machine_group').insert(data);
-    //         });
-    //         return true;
-    //     } catch (err) {
-    //         return 'Error adding machine group:' + err;
-    //     }
-    // }
-    // async editMachineGroup(id, data) {
-    //     try {
-    //         await cncDb.transaction(async trx => {
-    //             const updatedRows = await trx('machine_group')
-    //                 .where('id', id)
-    //                 .update(data);
-    
-    //             if (updatedRows === 0) {
-    //                 return 'No machine group found with the given ID';
-    //             }
-    //         });
-    //         return true;
-    //     } catch (err) {
-    //         return 'Error editing machine group: ' + err.message;
-    //     }
-    // }    
-    // async deleteMachineGroup(id) {
-    //     try {
-    //         await cncDb.transaction(async trx => {
-    //             const deletedRows = await trx('machine_group')
-    //                 .where('id', id)
-    //                 .del();
-    //             if (deletedRows === 0) {
-    //                 return 'No machine group found with the given ID';
-    //             }
-    //         });
-    //         return true;
-    //     } catch (err) {
-    //         return 'Error deleting machine group: ' + err.message;
-    //     }
-    // }
-    // async getMachineGroup() {
-    //     try {
-    //         const machineGroups = await cncDb('machine_group').select('*');
-    //         return machineGroups;
-    //     } catch (err) {
-    //         console.error('Error fetching machine groups:', err);
-    //         throw new Error('Failed to fetch machine groups');
-    //     }
-    // }
-    
-    
-    //===================================================================================================================================
-    //===================================================================================================================================
     //MANAGE USERS
     //===================================================================================================================================
     //===================================================================================================================================
