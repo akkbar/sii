@@ -1,0 +1,412 @@
+<%- include(headerPath) %>
+<style>
+    .sparkline-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1px;
+        font-size: 10px;
+        color: #666;
+    }
+
+    .label-start {
+        align-self: flex-start;
+    }
+
+    .label-end {
+        align-self: flex-end;
+    }
+    .machine {
+        line-height: 1;
+    }
+</style>
+<script>
+    var part_option = {
+        angle: 0.35, // The span of the gauge arc
+        lineWidth: 0.1, // The line thickness
+        radiusScale: 0.88, // Relative radius
+        pointer: {
+            length: 0.6, // // Relative to gauge radius
+            strokeWidth: 0.029, // The thickness
+            color: '#000000' // Fill color
+        },
+        limitMax: false,     // If false, max value increases automatically if value > maxValue
+        limitMin: false,     // If true, the min value of the gauge will be fixed
+        colorStart: '#6F6EA0',   // Colors
+        colorStop: '#C0C0DB',    // just experiment with them
+        strokeColor: '#EEEEEE',  // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true,     // High resolution support
+    
+    }
+    var oee_option = {
+        angle: -0.2, // The span of the gauge arc
+        lineWidth: 0.15, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+            length: 0.6, // // Relative to gauge radius
+            strokeWidth: 0.02, // The thickness
+            color: '#000000' // Fill color
+        },
+        limitMax: false,     // If false, max value increases automatically if value > maxValue
+        limitMin: false,     // If true, the min value of the gauge will be fixed
+        colorStart: '#6FADCF',   // Colors
+        colorStop: '#8FC0DA',    // just experiment with them
+        strokeColor: '#E0E0E0',  // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true,     // High resolution support.
+        staticZones: [
+            {strokeStyle: "rgb(255,0,0)", min: 0, max: 50},
+            {strokeStyle: "rgb(200,100,0)", min: 50, max: 70},
+            {strokeStyle: "rgb(150,150,0)", min: 70, max: 85},
+            {strokeStyle: "rgb(100,200,0)", min: 85, max: 100},
+            {strokeStyle: "rgb(0,255,0)", min: 100, max: 150}
+        ],
+        // staticLabels: {
+        //     font: "10px sans-serif",  // Specifies font
+        //     labels: [100, 500, 1000, 1500, 2000, 3100],  // Print labels at these values
+        //     color: "#000000",  // Optional: Label text color
+        //     fractionDigits: 0  // Optional: Numerical precision. 0=round off.
+        // },
+    }
+    var util_option = {
+        angle: 0.05, // The span of the gauge arc
+        lineWidth: 0.44, // The line thickness
+        radiusScale: 0.6, // Relative radius
+        pointer: {
+            length: 0.6, // // Relative to gauge radius
+            strokeWidth: 0.029, // The thickness
+            color: '#000000' // Fill color
+        },
+        limitMax: false,     // If false, max value increases automatically if value > maxValue
+        limitMin: false,     // If true, the min value of the gauge will be fixed
+        colorStart: '#6FADCF',   // Colors
+        colorStop: '#8FC0DA',    // just experiment with them
+        strokeColor: '#E0E0E0',  // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true,     // High resolution support
+    
+    }
+    function getStatusText(elem, status) {
+        switch (status) {
+            case 'Running':
+                elem.className ='card bg-success'
+                return
+            case 'Setup':
+                elem.className ='card bg-warning'
+                return
+            case 'Idle':
+                elem.className ='card bg-secondary'
+                return
+            case 'Downtime':
+                elem.className ='card bg-danger'
+                return
+            default:
+                elem.className ='card bg-secondary'
+                return
+        }
+    }
+    function getStatText(elem, status) {
+        switch (status) {
+            case 'Running':
+                elem.className ='bg-success p-2'
+                elem.innerHTML = 'Running'
+                return
+            case 'Setup':
+                elem.className ='bg-warning p-2'
+                elem.innerHTML = 'Setup'
+                return
+            case 'Idle':
+                elem.className ='bg-secondary p-2'
+                elem.innerHTML = 'Idle'
+                return
+            case 'Downtime':
+                elem.className ='bg-danger p-2'
+                elem.innerHTML = 'Downtime'
+                return
+            default:
+                elem.className ='bg-secondary p-2'
+                elem.innerHTML = '-'
+                return
+        }
+    }
+    function writePartName(elem, part_name){
+        elem.innerHTML = part_name
+    }
+    function writePartCounter(elem, data) {
+        const productCount = data.product_count || 0
+        const productIdeal = 
+            (!isNaN(parseFloat(data.product_ideal))) 
+                ? parseFloat(data.product_ideal).toFixed(0) 
+                : "N/A"
+
+        elem.innerHTML = `${productCount} / ${productIdeal}`;
+        const ar = document.getElementById('oee_ar_' + data.machine_id)
+        const pr = document.getElementById('oee_pr_' + data.machine_id)
+        const qr = document.getElementById('oee_qr_' + data.machine_id)
+        if(ar){
+            ar.innerHTML = data.availability
+        }
+        if(pr){
+            pr.innerHTML = data.performance
+        }
+        if(qr){
+            qr.innerHTML = data.quality
+        }
+        const startLabels = document.getElementsByClassName('start_label_' + data.machine_id)
+        const endLabels = document.getElementsByClassName('end_label_' + data.machine_id)
+        // Update start labels
+        if (startLabels.length > 0) {
+            Array.from(startLabels).forEach(label => {
+                label.innerHTML = formatTimeToHHMM(data.shift_start)
+            })
+        }
+
+        // Update end labels
+        if (endLabels.length > 0) {
+            Array.from(endLabels).forEach(label => {
+                label.innerHTML = formatTimeToHHMM(data.shift_end)
+            })
+        }
+    }
+    function formatTimeToHHMM(dateTime) {
+        const date = new Date(dateTime)
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        return `${hours}:${minutes}`
+    }
+    var gauges = {
+        util: {},
+        oee: {},
+        part: {},
+    };
+    var span_value = {
+        util: {},
+        oee: {},
+        part: {},
+    };
+    //realtime mode
+    //utilization %, part count, spark: part + utilization, OK/ALOMOST/NG = utilization
+    //oee mode
+    //oee %, part count/target, spark: part + utilization, OK/ALOMOST/NG = oee, PR, QR, AR(DT hour)
+    //part mode
+    //cycletime, part count/target, spark: part + utilization, OK/ALOMOST/NG = CT
+</script>
+<div class="content-wrapper">
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <% data.machines.forEach(function(machine) { %>
+                <div class="col-lg-2 col-md-4 col-sm-12 machine mt-2">
+                    <div class="card bg-success" id="status_<%= machine.id %>">
+                        <div class="card-header">
+                            <h3 class="card-title"><%= machine.mc_name %></h3>
+                        </div>
+                        <div class="card-body p-1 bg-white">
+                            <div class="row">
+                                <div class="col-6 text-center">
+                                    <% if ((typeof header.user.realtimeMode !== 'undefined' && header.user.realtimeMode == 1) || typeof header.user.realtimeMode == 'undefined') { %>
+                                        <canvas id="util_<%= machine.id %>" width="125" height="105"></canvas>
+                                        <div style="font-size: 20px;font-weight: 800;" id="util_value_<%= machine.id %>">0</div>
+                                        <div style="font-size: 15px;font-weight: 800;" class="reset">Utilization(%)</div>
+                                    <% } %>
+                                    <% if (typeof header.user.realtimeMode !== 'undefined' && header.user.realtimeMode == 2) { %>
+                                        <canvas id="oee_<%= machine.id %>" width="125" height="105"></canvas>
+                                        <div style="font-size: 20px;font-weight: 800;" id="oee_value_<%= machine.id %>">0</div>
+                                        <div style="font-size: 15px;font-weight: 800;" class="reset">OEE(%)</div>
+                                    <% } %>
+                                    <% if (typeof header.user.realtimeMode !== 'undefined' && header.user.realtimeMode == 3) { %>
+                                        <canvas id="part_<%= machine.id %>" width="125" height="105"></canvas>
+                                        <div style="font-size: 20px;font-weight: 800;" id="part_value_<%= machine.id %>">0</div>
+                                        <div style="font-size: 15px;font-weight: 800;" class="reset">Part</div>
+                                    <% } %>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <div style="font-size: 12px;" class="reset" id="part_name_<%= machine.id %>">part_name</div>
+                                    <div style="font-size: 20px;" class="reset" id="part_count_<%= machine.id %>">XXXX/XXXX</div>
+                                    <table style="width:100%">
+                                        <tr class="mb-1">
+                                            <td style="font-size: 12px;font-weight: 800;">PART</td>
+                                            <td>
+                                                <div id="part_spark_<%= machine.id %>"></div>
+                                                <div class="sparkline-labels">
+                                                    <span class="label-start start_label_<%= machine.id %>">08:00</span>
+                                                    <span class="label-end end_label_<%= machine.id %>">16:00</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-size: 12px;font-weight: 800;">UTIL</td>
+                                            <td>
+                                                <div id="util_spark_<%= machine.id %>"></div>
+                                                <div class="sparkline-labels">
+                                                    <span class="label-start start_label_<%= machine.id %>">08:00</span>
+                                                    <span class="label-end end_label_<%= machine.id %>">16:00</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <div class="p-2">
+                                        <div class="bg-success p-2" id="stat_<%= machine.id %>">OK</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% if (typeof header.user.realtimeMode !== 'undefined' && header.user.realtimeMode == 2) { %>
+                            <div class="card-footer p-1">
+                                <div class="row">
+                                    <div class="col-sm-4 col-4">
+                                        <div class="description-block border-right">
+                                            <h5 class="description-header" id="oee_ar_<%= machine.id %>">X%</h5>
+                                            <span class="description-text">AR</span>
+                                        </div>
+                                        <!-- /.description-block -->
+                                    </div>
+                                    <!-- /.col -->
+                                    <div class="col-sm-4 col-4">
+                                        <div class="description-block border-right">
+                                            <h5 class="description-header" id="oee_pr_<%= machine.id %>">X%</h5>
+                                            <span class="description-text">PR</span>
+                                        </div>
+                                        <!-- /.description-block -->
+                                    </div>
+                                    <!-- /.col -->
+                                    <div class="col-sm-4 col-4">
+                                        <div class="description-block">
+                                            <h5 class="description-header" id="oee_qr_<%= machine.id %>">X%</h5>
+                                            <span class="description-text">QR</span>
+                                        </div>
+                                        <!-- /.description-block -->
+                                    </div>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        getStatusText(document.getElementById('status_<%= machine.id %>'), '<%= machine.status %>')
+                        $("#part_spark_<%= machine.id %>").sparkline([5,6,7,2,0,6,7,2], {
+                        type: 'bar',
+                        height: '30',
+                        barWidth: 7})
+                        $("#util_spark_<%= machine.id %>").sparkline([5,6,7,2,0,6,7,2], {
+                        type: 'bar',
+                        height: '30',
+                        barWidth: 7})
+                        
+                        var target1 = document.getElementById('util_<%= machine.id %>')
+                        var target2 = document.getElementById('oee_<%= machine.id %>')
+                        var target3 = document.getElementById('part_<%= machine.id %>')
+                        if (target1) {
+                            gauges.util['<%= machine.id %>'] = new Gauge(target1).setOptions(util_option)
+                            gauges.util['<%= machine.id %>'].maxValue = 60
+                            gauges.util['<%= machine.id %>'].setMinValue(0)
+                            gauges.util['<%= machine.id %>'].animationSpeed = 32
+                            gauges.util['<%= machine.id %>'].set(0)
+                            span_value.util['<%= machine.id %>'] = document.getElementById('util_value_<%= machine.id %>')
+                        }
+                        if (target2) {
+                            gauges.oee['<%= machine.id %>'] = new Gauge(target2).setOptions(oee_option)
+                            gauges.oee['<%= machine.id %>'].maxValue = 150
+                            gauges.oee['<%= machine.id %>'].setMinValue(0)
+                            gauges.oee['<%= machine.id %>'].animationSpeed = 32
+                            gauges.oee['<%= machine.id %>'].set(1)
+                            span_value.oee['<%= machine.id %>'] = document.getElementById('oee_value_<%= machine.id %>')
+                        }
+                        if (target3) {
+                            gauges.part['<%= machine.id %>'] = new Donut(target3).setOptions(part_option)
+                            gauges.part['<%= machine.id %>'].maxValue = 3000
+                            gauges.part['<%= machine.id %>'].setMinValue(0)
+                            gauges.part['<%= machine.id %>'].animationSpeed = 32
+                            gauges.part['<%= machine.id %>'].set(2475)
+                            span_value.part['<%= machine.id %>'] = document.getElementById('part_value_<%= machine.id %>')
+                        }
+                    });
+                </script>
+                <% }); %>
+            </div>
+        
+        </div>
+    </section>
+</div>
+<script>
+    $(document).ready(function () {
+		$(".sel2").select2({
+			placeholder: "Please Select",
+            minimumResultsForSearch: 20
+        })
+        
+        const socket = io()
+        socket.emit('join-room', 'machine-status-room')
+        socket.emit('join-room', 'machine-active-oee-room')
+        socket.emit('join-room', 'sparkline-room')
+        socket.on('connect', () => {
+            console.log('Connected to server')
+        });
+        socket.on('machine-status', function(data) {
+            data.forEach(function(machine) {
+                getStatusText(document.getElementById('status_' + machine.machine_id),  machine.state)
+                getStatText(document.getElementById('stat_' + machine.machine_id),  machine.state)
+                writePartName(document.getElementById('part_name_' + machine.machine_id),  machine.product_name)
+            })
+        });
+        socket.on('machine-active-oee', function(oee) {
+            if (!Array.isArray(oee.oee)) {
+                console.error('Invalid data received for machine-oee:', oee.oee)
+                return
+            }
+            oee.oee.forEach(function(row) {
+                const date1 = moment(row.min_start)
+                const date2 = moment(row.shift_end)
+                const maxAxis = date2.diff(date1, 'seconds') / Number(row.idealct)
+
+                writePartCounter(document.getElementById('part_count_' + row.machine_id),  row)
+                if (gauges.util[row.machine_id]) {
+                    gauges.util[row.machine_id].set(row.utilization)
+                    span_value.util[row.machine_id].innerHTML = row.utilization
+                }
+                if (gauges.oee[row.machine_id]) {
+                    gauges.oee[row.machine_id].set(row.oee)
+                    span_value.oee[row.machine_id].innerHTML = row.oee
+                }
+                if (gauges.part[row.machine_id]) {
+                    gauges.part[row.machine_id].maxValue = maxAxis
+                    gauges.part[row.machine_id].set(row.product_count)
+                    span_value.part[row.machine_id].innerHTML = row.product_count
+                }
+            });
+        });
+        socket.on('sparkline-chart', function(data) {
+            data.forEach(machine => {
+                const partData = machine.part.map(p => p.qty);
+                const partTooltips = machine.part.map(p => p.hour);
+
+                $("#part_spark_" + machine.machine_id).sparkline(partData, {
+                    type: 'bar',
+                    height: '30',
+                    barWidth: 7,
+                    chartRangeMin: 0,
+                    tooltipFormat: '{{offset:offset}}: {{value}} parts',
+                    tooltipValueLookups: {
+                        'offset': partTooltips
+                    }
+                });
+
+                const utilData = machine.util.map(p => p.run);
+                const utilTooltips = machine.util.map(p => p.hour);
+
+                $("#util_spark_" + machine.machine_id).sparkline(utilData, {
+                    type: 'bar',
+                    height: '30',
+                    barWidth: 7,
+                    chartRangeMin: 0,
+                    tooltipFormat: '{{offset:offset}}: {{value}} mins',
+                    tooltipValueLookups: {
+                        'offset': utilTooltips
+                    }
+                });
+            });
+        });
+    });
+</script>
+<%- include(footerPath) %>

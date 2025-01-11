@@ -1,0 +1,41 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: openaiot-mysql-sii
+    restart: always
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: OpenAIoT-mysql-password
+      MYSQL_DATABASE: db_main
+      MYSQL_USER: openaiot-admin
+      MYSQL_PASSWORD: OpenAIoT-mysql-password
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./mysql-init/my.cnf:/etc/my.cnf
+      - ./mysql-init/a-entrypoint.sh:/a-entrypoint.sh
+      - ./mysql-init/b-init.sql:/docker-entrypoint-initdb.d/b-init.sql
+    networks:
+      - openaiot-network
+    entrypoint: ["/bin/bash", "/a-entrypoint.sh"]
+    command: ["mysqld", "--init-file=/docker-entrypoint-initdb.d/b-init.sql"]
+
+  mongo:
+    image: mongo:6.0
+    container_name: openaiot-mongo-sii
+    restart: always
+    ports:
+      - "3309:27017"
+    volumes:
+      - ./mongo-data:/data/db   # Persist MongoDB data locally
+    networks:
+      - openaiot-network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: OpenAIoT-mongo-password
+      MONGO_INITDB_DATABASE: main_db
+
+networks:
+  openaiot-network:
+    driver: bridge
+    name: openaiot-network

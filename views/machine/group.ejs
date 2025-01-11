@@ -1,0 +1,289 @@
+<%- include(headerPath) %>
+<style>
+    li.buttons-columnVisibility a {
+        cursor:pointer;
+        }
+    li.buttons-columnVisibility.active a {
+        background-color:transparent;
+        color:inherit; 
+        }
+    li.buttons-columnVisibility.active a:hover {
+        background-color:#f5f5f5;
+        color:inherit;
+        }
+    li.buttons-columnVisibility a:before {
+        width:25px;
+        font-family:"Glyphicons Halflings";
+        content:"\e013";
+        color:transparent;
+        padding-right:10px;
+        }
+    li.buttons-columnVisibility.active a:before {
+        color:inherit;
+        }
+    #table_filter label { min-width: 100%;}
+    #table_filter label input{ min-width: 100%;}
+    .expand {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20vw;
+    }
+    .expand:hover {
+        white-space: normal;
+    }
+</style>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0">Manage Machine Group
+                        <button onclick="addgroup()" class="btn btn-success float-right"><i class="fa fa-plus"></i> Add</button>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-6 col-12">
+					<div class="card">
+						<div class="card-body">
+                            <table id="table" class="table" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Group Name</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<div class="modal fade" id="add_group">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Group</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Group Name</label><br>
+                            <input type="text" class="form-control" id="addgroup_name" value=""/>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="add_group_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="add_group_exe()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit_group">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Group</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Group Name</label><br>
+                            <input type="text" class="form-control" id="group_name" value=""/>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="edit_group_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="edit_group_exe()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/plugins/select2/js/select2.min.js"></script>
+<script type="text/javascript">
+    var editId;
+    function show_modal(id, group_name){
+        editId = id;
+        $('#edit_group').modal('show');
+        $('#group_name').val(group_name);
+    }
+    function edit_group_exe() {
+        document.getElementById('edit_group_warning').innerHTML = '';
+        const groupName = document.getElementById('group_name').value;
+        axios.post('/machine/updateGroup', {
+            group_name: groupName,
+            editId: editId
+        })
+        .then(function (response) {
+            if (response.status === 201) {
+                document.getElementById('edit_group_warning').innerHTML = '';
+                $('#edit_group').modal('hide'); // Hide the modal
+                table.ajax.reload(null, false); // Reload the table
+            }
+        })
+        .catch(function (error) {
+            if (error.response) {
+                if (error.response.status === 400) {
+                    document.getElementById('edit_group_warning').innerHTML = error.response.data.message;
+                } else if (error.response.status === 500) {
+                    document.getElementById('edit_group_warning').innerHTML = error.response.data.message;
+                } else {
+                    document.getElementById('edit_group_warning').innerHTML = error.message;
+                }
+            } else {
+                document.getElementById('edit_group_warning').innerHTML = 'An unexpected error occurred.';
+            }
+        });
+    }
+    function delete_modal(id, group_name) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delete (' + group_name + ')',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, do it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post('/machine/removeGroup', { id: id })
+                    .then((response) => {
+                        if (response.status === 201) {
+                            table.ajax.reload(null, false);
+                        }
+                    })
+                    .catch((error) => {
+                        Swal.fire('Error!', error.response.data, 'error');
+                    });
+            }
+        });
+    }
+    function addgroup(){
+        $('#add_group').modal('show');
+    }
+    function add_group_exe() {
+        document.getElementById('add_group_warning').innerHTML = '';
+        const groupName = document.getElementById('addgroup_name').value;
+        axios.post('/machine/createGroup', { group_name: groupName })
+            .then(function (response) {
+                if (response.status === 201) {
+                    document.getElementById('add_group_warning').innerHTML = '';
+                    $('#add_group').modal('hide');
+                    document.getElementById('addgroup_name').value = ''; // Clear the input field
+                    table.ajax.reload(null, false); // Reload the table
+                }
+            })
+            .catch(function (error) {
+                if (error.response) {
+                    if (error.response.status === 400) {
+                        document.getElementById('add_group_warning').innerHTML = error.response.data.message;
+                    } else if (error.response.status === 500) {
+                        document.getElementById('add_group_warning').innerHTML = error.response.data.message;
+                    } else {
+                        document.getElementById('add_group_warning').innerHTML = error.message;
+                    }
+                } else {
+                    document.getElementById('add_group_warning').innerHTML = 'An unexpected error occurred.';
+                }
+            });
+    }
+	var table;
+    $(document).ready(function() {
+        table = $('#table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            ajax: {
+                url: "/machine/group",
+                type: "POST",
+                data: function ( data ) {
+                    // data.start_date = $('#start_date').val();
+                    // data.end_date = $('#end_date').val();
+                    // data.start_time = $('#start_time').val();
+                    // data.end_time = $('#end_time').val();
+                    // data.eq_id = $('#eq_id').val();
+                    // data.area = $('#area').val();
+                    // data.status = $('#status').val();
+                }
+            },
+            // "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+            //     if ( aData[9] != "" ){
+            //         $('td', nRow).css('background-color', '#a4d3eb');
+            //     }
+            // },
+            columnDefs: [
+                // { visible: false, targets: [ 2, 6] },
+                { orderable: false, targets: [1] }
+            ],
+            aoColumns: [
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12'B>>" +
+            "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+            buttons: [{
+                    extend:    'copy',
+                    text:      '<i class="fa fa-copy"></i>',
+                    titleAttr: 'Copy',
+                    className: 'btn btn-info'
+                },{
+                    extend:    'excel',
+                    text:      '<i class="fa fa-file-excel"></i>',
+                    titleAttr: 'Excel',
+                    className: 'btn btn-success'
+                },{
+                    extend:    'pdf',
+                    text:      '<i class="fa fa-file-pdf"></i>',
+                    titleAttr: 'PDF',
+                    className: 'btn btn-danger'
+                },{
+                    extend:    'print',
+                    text:      '<i class="fa fa-print"></i>',
+                    titleAttr: 'Print',
+                    className: 'btn btn-warning',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                    messageTop: 'Alarm'
+                },{
+                    extend: 'colvis',
+                    className: 'btn btn-default',
+                    postfixButtons: ['colvisRestore']
+                }],
+                fade: false,
+            language: {
+                buttons: {
+                    colvis: 'Columns'
+                },
+                searchPlaceholder: "Search records",
+                search: ""
+            }
+        });
+    });
+</script>
+
+<%- include(footerPath) %>

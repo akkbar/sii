@@ -1,0 +1,14 @@
+{
+    "chartSettings": {
+        "limits": {
+        "lineChart": 100,
+        "barChart": 200
+        },
+        "gauge": {
+        "greenRange": [0, 50],
+        "yellowRange": [51, 80],
+        "redRange": [81, 100]
+        }
+    }
+}
+  

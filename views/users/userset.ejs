@@ -1,0 +1,230 @@
+<%- include(headerPath) %>
+<style>
+    #cropimage {
+        max-width: 100%;
+    }
+    .cropper-container{
+        max-width: 100%;
+    }
+</style>
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="content-fluid">
+            <h1>
+                <i class="fa fa-user"></i> Account Data 
+                <small>Set account detail</small>
+            </h1>
+        </div>
+    </section>
+    <section class="content">
+        <div class="content-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Update Account</h3>
+                        </div>
+                        <form id="updateProfileForm" role="form" action="" method="post">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Name</label>
+                                            <input type="text" class="form-control" value="<%- userdata.fullname %>" id="fullname" placeholder="Username" name="uName" maxlength="20" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Role</label>
+                                            <input type="text" class="form-control" value="<%- userdata.user_role %>" placeholder="Role" name="uName" maxlength="20" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="inputPassword1">Password</label>
+                                            <input type="password" class="form-control" placeholder="Old password" name="oldPassword" maxlength="2000" autocomplete="username email" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span id="warningNote"></span>
+                                <input type="submit" class="btn btn-primary" value="Submit" />
+                                <input type="reset" class="btn btn-default" value="Reset" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Change Password</h3>
+                        </div>
+                        <form id="changePassForm">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="oldpassword">Old Password</label>
+                                            <input type="password" class="form-control" id="oldpassword" placeholder="Old password" name="oldpassword" maxlength="2000" required>
+                                        </div>
+                                        <span class="error-message text-danger"></span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <span id="errorMessage" class="text-danger"></span>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="password">New Password</label>
+                                            <input type="password" class="form-control" id="password" placeholder="New password" oninput="validatePassword();" name="password" maxlength="2000" required>
+                                        </div>
+                                        <span class="error-message text-danger"></span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="repassword">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="repassword" placeholder="Confirm new password" oninput="validatePassword();" name="repassword" maxlength="2000" required>
+                                        </div>
+                                        <span class="error-message text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <input type="submit" class="btn btn-primary" value="Submit"/>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal modal-default fade" id="cropperModal">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Crop Image</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <img id="cropimage">
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                            <button type="button" id="crop_button" class="btn btn-success">CROP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+
+<script src="/plugins/cropperjs/cropper.min.js"></script>
+<link href="/plugins/cropperjs/cropper.min.css" rel="stylesheet">
+<script src="/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+<script>
+    document.getElementById('updateProfileForm').addEventListener('submit', async function (e) {
+        e.preventDefault()
+
+        const form = e.target
+        const formData = {
+            fullname: form.querySelector('#fullname').value,
+            oldPassword: form.querySelector('[name="oldPassword"]').value,
+        };
+
+        try {
+            const response = await axios.post('/users/updateProfile', formData)
+            const warningNote = form.querySelector('#warningNote')
+            if (response.data.success) {
+                warningNote.innerHTML = `<span style="color: green;">${response.data.message}</span>`
+            } else {
+                warningNote.innerHTML = `<span style="color: red;">${response.data.message}</span>`
+            }
+        } catch (error) {
+            console.error(error)
+            const warningNote = form.querySelector('#warningNote')
+            warningNote.innerHTML = `<span style="color: red;">An error occurred. Please try again.</span>`
+        }
+    });
+
+
+    document.getElementById('changePassForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+
+        const formData = {
+            oldpassword: document.getElementById('oldpassword').value.trim(),
+            password: document.getElementById('password').value.trim(),
+            repassword: document.getElementById('repassword').value.trim(),
+        };
+        try {
+            const response = await fetch('/users/changepass', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            const data  = await response.json();
+
+            if (data.success) {
+                document.getElementById('errorMessage').textContent = '';
+            } else {
+                document.getElementById('errorMessage').textContent = data.message;
+                for (const [field, message] of Object.entries(data.errors)) {
+                    const input = document.getElementById(field);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                        if (errorElement) {
+                            errorElement.textContent = message;
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+    function validatePassword() {
+        const passwordInput = document.getElementById('password').value;
+        const repasswordInput = document.getElementById('repassword').value;
+        const passwordError = document.getElementById('errorMessage');
+
+        // Password policy regex
+        const passwordPolicyRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/;
+
+        if (!passwordPolicyRegex.test(passwordInput)) {
+            passwordError.textContent =
+            'Password must be at least 8 characters, include one uppercase letter, one symbol, and one number.';
+        } else {
+            passwordError.textContent = ''; // Clear error message
+        }
+        if(repasswordInput != ''){
+            const input = document.getElementById('repassword');
+            if(passwordInput == repasswordInput){
+                input.classList.remove('is-invalid');
+                const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                if (errorElement) {
+                    errorElement.textContent = '';
+                }
+            }else{
+                input.classList.add('is-invalid');
+                const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                if (errorElement) {
+                    errorElement.textContent = 'Passwords do not match.';
+                }
+            }
+        }
+
+    }
+</script>
+<%- include(footerPath) %>

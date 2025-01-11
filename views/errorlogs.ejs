@@ -1,0 +1,91 @@
+<%- include(headerPath) %>
+
+<style>
+  li.buttons-columnVisibility a {
+      cursor:pointer;
+      }
+  li.buttons-columnVisibility.active a {
+      background-color:transparent;
+      color:inherit; 
+      }
+  li.buttons-columnVisibility.active a:hover {
+      background-color:#f5f5f5;
+      color:inherit;
+      }
+  li.buttons-columnVisibility a:before {
+      width:25px;
+      font-family:"Glyphicons Halflings";
+      content:"\e013";
+      color:transparent;
+      padding-right:10px;
+      }
+  li.buttons-columnVisibility.active a:before {
+      color:inherit;
+      }
+  #table_filter label { min-width: 100%;}
+  #table_filter label input{ min-width: 100%;}
+  .expand {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 20vw;
+  }
+  .expand:hover {
+      white-space: normal;
+  }
+  .ui-timepicker-container {
+      z-index: 1060 !important; /* Ensure it's higher than the modal's z-index */
+  }
+  .chart-div {
+    width: 100%; /* Adjust to your layout */
+    height: 300px; /* Explicitly set height */
+  }
+</style>
+<div class="content-wrapper">
+  <div class="content-header">
+      <div class="container-fluid">
+          <div class="row mb-2">
+              <div class="col-sm-12">
+                  <h1 class="m-0">Error Logs
+                  </h1>
+              </div>
+          </div>
+      </div>
+  </div>
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-lg-12 col-12">
+          <div class="card">
+            <div class="card-body table-responsive">
+              <table id="table" class="table" cellspacing="0" width="100%">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Level</th>
+                    <th>Message</th>
+                    <th>Stack</th>
+                    <th>Additional Info</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% data.errorLogs.forEach(log => { %>
+                    <tr>
+                      <td><%= log.timestamp %></td>
+                      <td><%= log.level %></td>
+                      <td><%= log.message %></td>
+                      <td><%= log.stack %></td>
+                      <td><%= JSON.stringify(log.additionalInfo) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include(footerPath) %>

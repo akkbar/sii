@@ -1,0 +1,103 @@
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Barka | Login</title>
+  
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&amp;display=fallback"> -->
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <link rel="stylesheet" href="/css/adminlte.min.css?v=3.2.0">
+    <body class="login-page" style="min-height: 466px;">
+    <div class="login-box">
+        <!-- <div class="card card-outline card-primary"> -->
+        <div class="card card-widget widget-user-2">
+            <div class="widget-user-header">
+                <div class="widget-user-image">
+                  <img src="/img/barka.png" alt="User Avatar">
+                </div>
+                <h3 class="widget-user-username">Barka Industries</h3>
+                <h5 class="widget-user-desc">Sign in to start</h5>
+            </div>
+            <div class="card-body">
+                    <form id="loginForm">
+                        <p style="color: red;" id="errorMessage"></p>
+                        <div class="input-group mb-3">
+                            <input name="username" id="username" type="text" class="form-control" placeholder="Username" required>
+                                <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-user"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-group mb-3">
+                            <input name="password" id="password" type="password" class="form-control" placeholder="Password" required>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-8">
+                                <!-- <div class="icheck-primary">
+                                    <input type="checkbox" id="remember">
+                                    <label for="remember">
+                                    Remember Me
+                                    </label>
+                                </div> -->
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-primary btn-block bg-purple">Sign In</button>
+                            </div>
+                        </div>
+                    </form>
+        
+                <!-- <div class="social-auth-links text-center mt-2 mb-3">
+                <a href="#" class="btn btn-block btn-primary">
+                    <i class="fab fa-facebook mr-2"></i> Sign in using Facebook
+                </a>
+                <a href="#" class="btn btn-block btn-danger">
+                    <i class="fab fa-google-plus mr-2"></i> Sign in using Google+
+                </a>
+                </div> -->
+                
+                    <p class="mb-1">
+                        <!-- <a href="/forgot">I forgot my password</a> -->
+                    </p>
+                    <p class="mb-0">
+                        <a href="/register" class="text-center">Register a new account</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <script src="/plugins/jquery/jquery.min.js"></script>
+        <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="/js/adminlte.min.js?v=3.2.0"></script>
+        <script>
+            document.getElementById('loginForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const formData = {
+                    username: document.getElementById('username').value.trim(),
+                    password: document.getElementById('password').value.trim(),
+                };
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
+                    });
+
+                    const data  = await response.json();
+
+                    if (data.success) {
+                        window.location.href = '/dashboard';
+                    } else {
+                        document.getElementById('errorMessage').textContent = data.message;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+        </script>
+    </body>
+</html>

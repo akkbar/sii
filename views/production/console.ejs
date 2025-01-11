@@ -1,0 +1,1582 @@
+<%- include(headerPath) %>
+<style>
+    .active_machine {background-color: #f7f7f7;}
+    .chart-div {
+      width: 100%; /* Adjust to your layout */
+      height: 300px; /* Explicitly set height */
+    }
+    .machine-list{
+        height: 80vh; /* 90% of the viewport height */
+        overflow-y: auto; /* Enables vertical scrolling if content overflows */
+    }
+    /* .table td, .table th {
+        padding: 4px 8px;
+    } */
+    .tab-pane {
+        min-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+<script>
+    function getStatusText(elem, status) {
+        switch (status) {
+            case 'Running':
+                elem.className ='badge badge-success'
+                elem.innerHTML ='Running'
+                return
+            case 'Setup':
+                elem.className ='badge badge-warning'
+                elem.innerHTML ='Setup'
+                return
+            case 'Idle':
+                elem.className ='badge badge-secondary'
+                elem.innerHTML ='Idle'
+                return
+            case 'Downtime':
+                elem.className ='badge badge-danger'
+                elem.innerHTML ='Downtime'
+                return
+            default:
+                elem.className ='badge badge-secondary'
+                elem.innerHTML ='Unknow'
+                return
+        }
+    }
+    function writePartName(elem, part_name){
+        // elem.innerHTML = part_name
+    }
+    function writePartCounter(elem, data) {
+        // const productCount = data.product_count || 0; // Default to 0 if null or undefined
+        // const productIdeal = 
+        //     (!isNaN(parseFloat(data.product_ideal))) 
+        //         ? parseFloat(data.product_ideal).toFixed(0) 
+        //         : "N/A"; // Convert to float and format, or default to "N/A"
+
+        // elem.innerHTML = `${productCount} / ${productIdeal}`;
+    }
+    var span_value = {
+        util: {},
+        oee: {},
+        part: {},
+    };
+</script>
+<div class="content-wrapper">
+    <!-- <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12 d-flex align-items-center justify-content-between">
+                    <h1 class="m-0">Operator Dashboard</h1>
+                </div>
+            </div>
+        </div>
+    </div> -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-12" id="report_page">
+					<div class="card card-primary card-outline card-outline-tabs">
+						<div class="card-header" id="reportPage">
+                            <div class="row">
+                                <div class="col-12">
+                                    <h4 class="card-title"><span id="mc_name-data"></span></h4>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 d-flex justify-content-between">
+                                    <span><b>Product: </b><span id="prod_name-data"></span></span>
+                                    <span><span id="min_start-data"></span> (Shift <span id="shift-data"></span>)</span>
+                                </div>
+                            </div>
+						</div>
+                        <div class="card-header p-0 border-bottom-0">
+                            <ul class="nav nav-tabs" id="operatorTab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" onclick="partResizeSet()" id="part-div-tab" data-toggle="pill" href="#part-div" role="tab" aria-controls="part-div" aria-selected="true">
+                                        <div class="description-block">
+                                            <span class="description-text">Part Counter</span>
+                                            <h5 class="description-header text-dark" id="part-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" onclick="utilResizeSet()" id="util-div-tab" data-toggle="pill" href="#util-div" role="tab" aria-controls="util-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">Utilization</span>
+                                            <h5 class="description-header text-dark" id="util-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" onclick="ctResizeSet()" id="cycletime-div-tab" data-toggle="pill" href="#cycletime-div" role="tab" aria-controls="cycletime-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">Cycletime</span>
+                                            <h5 class="description-header text-dark" id="cycletime-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="reject-div-tab" data-toggle="pill" href="#reject-div" role="tab" aria-controls="reject-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">Reject</span>
+                                            <h5 class="description-header text-dark" id="reject-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="downtime-div-tab" data-toggle="pill" href="#downtime-div" role="tab" aria-controls="downtime-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">Downtime</span>
+                                            <h5 class="description-header text-dark" id="downtime-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" onclick="oeeResizeSet()" id="oee-div-tab" data-toggle="pill" href="#oee-div" role="tab" aria-controls="oee-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">OEE</span>
+                                            <h5 class="description-header text-dark" id="oee-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="alarm-div-tab" data-toggle="pill" href="#alarm-div" role="tab" aria-controls="alarm-div" aria-selected="false">
+                                        <div class="description-block">
+                                            <span class="description-text">Alarm</span>
+                                            <h5 class="description-header text-dark" id="alarm-data">X</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="operatorTabContent">
+                                <div class="tab-pane fade show active" id="part-div" role="tabpanel" aria-labelledby="part-div-tab">
+                                    <div class="row">
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <h4>Actual Counter</h4>
+                                            <h1 id="part-data2">XXX</h1>
+                                            <div id="cycletime-chart" style="height: 300px;"></div>
+                                        </div>
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div id="ring-gauge" style="height: 400px;"></div>
+                                        </div>
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <h4>Ideal Part</h4>
+                                            <h1 id="ideal-data2">XXX</h1>
+                                            <h4>Expected at End Shift</h4>
+                                            <h1 id="ideal-data3">XXX</h1>
+                                            <div id="partcounter-chart" style="height: 200px;"></div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="util-div" role="tabpanel" aria-labelledby="util-div-tab">
+                                    <div class="row">
+                                        <div class="col-lg-4 col-md-12 col-12">
+                                            <div id="util-gauge" style="height: 350px;"></div>
+                                        </div>
+                                        <div class="col-lg-8 col-md-12 col-12">
+                                            <div class="row">
+                                                <div class="col-lg-12 col-md-6 col-12">
+                                                    <div style="overflow: hidden;" class="visavail" id="visavail_container">
+                                                        <p id="visavail_graph">
+                                                            <!-- Visavail.js chart will be placed here -->
+                                                        </p>
+                                                        
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-6 col-md-6 col-12">
+                                                    <div class="info-box shadow-lg">
+                                                        <span class="info-box-icon bg-success"><i class="far fa-star"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Utilization</span>
+                                                            <span class="info-box-number" id="util-time"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-12">
+                                                    <div class="info-box shadow-lg">
+                                                        <span class="info-box-icon bg-secondary"><i class="fas fa-hourglass-start"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Idle</span>
+                                                            <span class="info-box-number" id="idle-time"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-12">
+                                                    <div class="info-box shadow-lg">
+                                                        <span class="info-box-icon bg-warning"><i class="fas fa-user-clock"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Setup</span>
+                                                            <span class="info-box-number" id="setup-time"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-12">
+                                                    <div class="info-box shadow-lg">
+                                                        <span class="info-box-icon bg-danger"><i class="fas fa-times-circle"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Downtime</span>
+                                                            <span class="info-box-number" id="down-time"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-12 col-md-12 col-12">
+                                                    <div class="info-box shadow-lg">
+                                                        <span class="info-box-icon bg-primary"><i class="fas fa-clock"></i></span>
+                                                        <div class="info-box-content">
+                                                            <span class="info-box-text">Total Time</span>
+                                                            <span class="info-box-number" id="time-time"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="cycletime-div" role="tabpanel" aria-labelledby="cycletime-div-tab">
+                                    <div class="row">
+                                        <div class="col-md-4 col-sm-12 col-12">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info" id="ct-symbol"><i class="fas fa-stopwatch"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Cycletime (Actual/Ideal)</span>
+                                                    <span class="info-box-number" id="ct-data"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 col-sm-12 col-12">
+                                            <div id="cycletimeall-chart" style="height: 350px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade p-0" id="reject-div" role="tabpanel" aria-labelledby="reject-div-tab">
+                                    <table id="reject-table" class="table" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Time</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-center">Category</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tab-pane fade p-0" id="downtime-div" role="tabpanel" aria-labelledby="downtime-div-tab">
+                                    <table id="downtime-table" class="table" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Start</th>
+                                                <th class="text-center">Duration</th>
+                                                <th class="text-center">Category</th>
+                                                <th class="text-center">Reason</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tab-pane fade" id="oee-div" role="tabpanel" aria-labelledby="oee-div-tab">
+                                    <div class="row">
+                                        <div class="col-lg-6 col-md-6 col-12">
+                                            <div id="oee-chart" style="height: 350px;"></div>
+                                        </div>
+                                        <div class="col-lg-6 col-md-6 col-12 text-center">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info elevation-1">AR</span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Availability</span>
+                                                    <span class="info-box-number">
+                                                        <span id="ar-data">X</span>
+                                                        <small>%</small>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info elevation-1">PR</span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Performance</span>
+                                                    <span class="info-box-number">
+                                                        <span id="pr-data">X</span>
+                                                        <small>%</small>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info elevation-1">QR</span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Quality</span>
+                                                    <span class="info-box-number">
+                                                        <span id="qr-data">10</span>
+                                                        <small>%</small>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="alarm-div" role="tabpanel" aria-labelledby="alarm-div-tab">
+                                    <table id="alarm-table" class="table" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Start</th>
+                                                <th class="text-center">Alarm</th>
+                                                <th class="text-center">Reason</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-lg-3 col-md-3 col-6">
+                                    <button id="addDataButton" class="btn btn-warning btn-block"><i class="fa fa-plus"></i> Reject</button>
+                                </div>
+                                <div class="col-lg-3 col-md-3 col-6"></div>
+                                <div class="col-lg-3 col-md-3 col-6"></div>
+                                <div class="col-lg-3 col-md-3 col-6">
+                                    <a class="btn btn-block bg-indigo" data-widget="control-sidebar" data-controlsidebar-slide="true" href="#" role="button">
+                                        <i class="fa fa-list"></i> Machine List
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+
+<div class="modal fade" id="addDataModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Reject</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Reject Quantity</label><br>
+                            <input type="number" step="1" id="addreject_count" name="addreject_count" class="form-control input-sm" autocomplete="off" placeholder="Reject"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label><br>
+                            <select id="addreject_category" name="addreject_category" class="sel2 form-control" style="width:100%">
+                                <% if (data.rejectCategory.length === 0) { %>
+                                    <option value="Others">No reject category available</option>
+                                <% } else { %>
+                                    <% data.rejectCategory.forEach(function(reject) { %>
+                                        <option value="<%= reject.id %>"><%= reject.category_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Notes</label><br>
+                            <textarea type="text" id="addreject_reason" name="addreject_reason" class="form-control input-sm" rows="2" autocomplete="off" placeholder="Start">
+    
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="addDataWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="addDataSubmit">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editDataModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Reject</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Reject Quantity</label><br>
+                            <input type="number" step="1" id="editreject_count" name="editreject_count" class="form-control input-sm" autocomplete="off" placeholder="Reject"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label><br>
+                            <select id="editreject_category" name="editreject_category" class="sel2 form-control" style="width:100%">
+                                <% if (data.rejectCategory.length === 0) { %>
+                                    <option value="Others">No reject category available</option>
+                                <% } else { %>
+                                    <% data.rejectCategory.forEach(function(reject) { %>
+                                        <option value="<%= reject.id %>"><%= reject.category_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Notes</label><br>
+                            <textarea type="text" id="editreject_reason" name="editreject_reason" class="form-control input-sm" rows="2" autocomplete="off" placeholder="Start">
+    
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="editDataWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editDataSubmit()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editDowntimeModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Set Downtime</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Downtime Start</label><br>
+                            <input type="text" id="editstart_time" name="editstart_time" class="form-control input-sm" autocomplete="off" placeholder="Start" readonly/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Category</label><br>
+                            <select id="editdowntime_category" name="editdowntime_category" class="sel2 form-control" style="width:100%">
+                                <% if (data.downtimeCategory.length === 0) { %>
+                                    <option value="Others">No downtime category available</option>
+                                <% } else { %>
+                                    <% data.downtimeCategory.forEach(function(downtime) { %>
+                                        <option value="<%= downtime.id %>"><%= downtime.category_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Additional Notes</label><br>
+                            <textarea type="text" id="editdowntime_reason" name="editdowntime_reason" class="form-control input-sm" rows="2" autocomplete="off" placeholder="Start">
+
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="editDowntimeWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editDowntimeSubmit()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editAlarmModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Alarm</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Alarm Start</label><br>
+                            <input type="text" id="editalarm_time" name="editalarm_time" class="form-control input-sm" autocomplete="off" placeholder="Start" readonly/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Alarm</label><br>
+                            <input type="text" id="editalarm" name="editalarm" class="form-control input-sm" autocomplete="off" placeholder="Start" readonly/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Additional Notes</label><br>
+                            <textarea type="text" id="editalarm_reason" name="editalarm_reason" class="form-control input-sm" rows="2" autocomplete="off" placeholder="Start">
+
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="editAlarmWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editAlarmSubmit()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    let editId, editDTId, editALId
+    let rejectTable, downtimeTable, alarmTable
+    let addedDate, shiftTime, shift
+    let machineId, productName, startTime, endTime
+    let partResize, utilResize, ctResize, oeeResize = 0
+
+    function partResizeSet(){
+        partResize = 1;
+    }
+    function utilResizeSet(){
+        utilResize = 1;
+    }
+    function ctResizeSet(){
+        ctResize = 1;
+    }
+    function oeeResizeSet(){
+        oeeResize = 1;
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const socket = io();
+        const cycleBox = document.getElementById('cycletime-data')
+        
+        const ctBox = document.getElementById('ct-data')
+        const ctLogo = document.getElementById('ct-symbol')
+        const mcName = document.getElementById('mc_name-data')
+        const prodName = document.getElementById('prod_name-data')
+        const minStart = document.getElementById('min_start-data')
+        const shift = document.getElementById('shift-data')
+        const reject = document.getElementById('reject-data')
+        
+        const downtimeData = document.getElementById('downtime-data')
+        const partData = document.getElementById('part-data')
+        const utilData = document.getElementById('util-data')
+        const oeeData = document.getElementById('oee-data')
+        const arData = document.getElementById('ar-data')
+        const prData = document.getElementById('pr-data')
+        const qrData = document.getElementById('qr-data')
+        const alarmData = document.getElementById('alarm-data')
+
+        const partData2 = document.getElementById('part-data2')
+        const idealData2 = document.getElementById('ideal-data2')
+        const idealData3 = document.getElementById('ideal-data3')
+        
+        const utilTime = document.getElementById('util-time')
+        const idleTime = document.getElementById('idle-time')
+        const setupTime = document.getElementById('setup-time')
+        const downTime = document.getElementById('down-time')
+        const timeTime = document.getElementById('time-time')
+
+        let reloadReject, reloadDowntime, reloadAlarm = 0
+        let currentMachineId = null
+        let allDataPartCounter
+
+        const callouts = document.querySelectorAll('.callout')
+        callouts.forEach(callout => {
+            callout.addEventListener('click', function() {
+                callouts.forEach(c => {
+                    c.classList.remove('callout-success', 'active_machine')
+                    c.classList.add('callout-secondary')
+                })
+
+                this.classList.remove('callout-secondary');
+                this.classList.add('callout-success', 'active_machine')
+
+                machineId = this.getAttribute('data-id')
+                reloadReject = 1
+                reloadDowntime = 1
+                getDashboard()
+                subscribeToCycletime(machineId)
+            })
+        })
+        initialize()
+        function initialize() {
+            const callouts = document.querySelectorAll('.callout');
+            if (callouts.length > 0) {
+                const firstCallout = callouts[0];
+                firstCallout.classList.add('callout-success', 'active_machine');
+                firstCallout.classList.remove('callout-secondary');
+
+                machineId = firstCallout.getAttribute('data-id');
+
+                getDashboard();
+                subscribeToCycletime(machineId);
+            }
+        } 
+
+        const ringChart = echarts.init(document.getElementById('ring-gauge'));
+        const gaugeData = [
+            {
+                value: 0,
+                name: 'Product Counter',
+                title: {
+                    offsetCenter: ['0%', '-30%']
+                },
+                detail: {
+                    valueAnimation: true,
+                    offsetCenter: ['0%', '-15%']
+                }
+            },
+            {
+                value: 0,
+                name: 'Ideal Counter',
+                title: {
+                    offsetCenter: ['0%', '15%']
+                },
+                detail: {
+                    valueAnimation: true,
+                    offsetCenter: ['0%', '30%']
+                }
+            },
+        ];
+        const ringOption = {
+            series: [
+                {
+                    type: 'gauge',
+                    startAngle: 90,
+                    endAngle: -270,
+                    pointer: {
+                        show: false
+                    },
+                    progress: {
+                        show: true,
+                        overlap: false,
+                        roundCap: true,
+                        clip: false,
+                        itemStyle: {
+                            borderWidth: 1,
+                            borderColor: '#464646'
+                        }
+                    },
+                    axisLine: {
+                        lineStyle: {
+                        width: 40
+                        }
+                    },
+                    splitLine: {
+                        show: false,
+                        distance: 0,
+                        length: 10
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    axisLabel: {
+                        show: false,
+                        distance: 50
+                    },
+                    max: 10000,
+                    data: gaugeData,
+                    title: {
+                        fontSize: 14
+                    },
+                    detail: {
+                        width: 50,
+                        height: 14,
+                        fontSize: 14,
+                        color: 'inherit',
+                        borderColor: 'inherit',
+                        borderRadius: 20,
+                        borderWidth: 1,
+                        formatter: '{value}'
+                    }
+                }
+            ]
+        }
+        ringChart.setOption(ringOption)
+
+        const utilChart = echarts.init(document.getElementById('util-gauge'));
+        const utilOption = {
+            series: [
+                {
+                    type: 'gauge',
+                    progress: {
+                        show: true,
+                        width: 18
+                    },
+                    axisLine: {
+                        lineStyle: {
+                        width: 18
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        length: 15,
+                        lineStyle: {
+                        width: 2,
+                        color: '#999'
+                        }
+                    },
+                    axisLabel: {
+                        distance: 25,
+                        color: '#999',
+                        fontSize: 14
+                    },
+                    anchor: {
+                        show: true,
+                        showAbove: true,
+                        size: 25,
+                        itemStyle: {
+                        borderWidth: 10
+                        }
+                    },
+                    title: {
+                        show: false
+                    },
+                    detail: {
+                        valueAnimation: true,
+                        fontSize: 24,
+                        offsetCenter: [0, '70%']
+                    },
+                    data: [
+                        {
+                            value: 70
+                        }
+                    ]
+                }
+            ]
+        }
+        utilChart.setOption(utilOption)
+
+        const CTChart = echarts.init(document.getElementById('cycletime-chart'));
+        const ctOptions = {
+            title: {
+                text: 'Last 10 Cycletimes',
+                left: 'center',
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: (params) => {
+                    return params
+                        .map(
+                            (item) =>
+                                `${item.name}: ${
+                                    item.value > 300
+                                        ? (item.value / 60).toFixed(2) + ' minutes'
+                                        : item.value + ' seconds'
+                                }`
+                        )
+                        .join('<br>');
+                },
+            },
+            xAxis: {
+                type: 'value',
+                boundaryGap: [0, 0.01],
+            },
+            yAxis: {
+                type: 'category',
+                data: [],
+            },
+            series: [
+                {
+                    type: 'bar',
+                    data: [],
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: (params) => {
+                            const value = params.value;
+                            return value > 300
+                                ? `${(value / 60).toFixed(2)} min`
+                                : `${value} sec`;
+                        },
+                    },
+                },
+            ],
+        }
+        CTChart.setOption(ctOptions);
+
+        const oeeChart = echarts.init(document.getElementById('oee-chart'));
+        const oeeOptions = {
+            
+            tooltip: {
+                formatter: '{a} <br/>{c}%',
+            },
+            series: [
+                {
+                    name: 'OEE',
+                    type: 'gauge',
+                    detail: { formatter: '{value}%', fontSize: 16 },
+                    data: [{ value: 0, name: 'OEE' }],
+                    axisLine: {
+                        lineStyle: {
+                            width: 5,
+                            color: [
+                                [0.5, '#FF6E76'],
+                                [0.8, '#FDDD60'],
+                                [1, '#7CFFB2'],
+                            ],
+                        },
+                    },
+                    axisLabel: {
+                        show: false,
+                    },  
+                    pointer: {
+                        width: 4,
+                    },
+                    title: {
+                        fontSize: 12,
+                    },
+                },
+            ],
+            grid: {
+                top: '5%',
+                bottom: '5%',
+                left: '5%',
+                right: '5%',
+                containLabel: true,
+            },
+        };
+        oeeChart.setOption(oeeOptions);
+        function updateOEEChart(currentValue, thresholds) {
+            oeeChart.resize()
+            oeeChart.setOption({
+                series: [
+                    {
+                        data: [{ value: currentValue, name: 'OEE' }],
+                        axisLine: {
+                            lineStyle: {
+                                color: thresholds,
+                            },
+                        },
+                    },
+                ],
+            });
+        }
+
+
+        function getDashboard(){
+            if(!machineId){
+                const firstCallout = document.querySelector('.callout')
+                machineId = firstCallout.getAttribute('data-id')
+            }
+        
+            axios.get(`/production/machineDashboard`, {
+                params: {
+                    machineId: machineId,
+                }
+            })
+            .then(response => {
+                // document.getElementById('reportPage').innerHTML = response.data.machineInfo.mc_name
+                mcName.innerHTML = response.data.machineInfo.mc_name
+            })
+            .catch(error => {
+                console.error('There was an error loading the report:', error)
+            })
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected to server')
+        });
+        
+        socket.emit('join-room', 'machine-active-oee-room')
+        socket.emit('join-room', 'machine-status-room')
+        socket.emit('join-room', 'counter-room')
+        const processData = (data) => {
+            const groupedData = {};
+            data.forEach(row => {
+                if (!groupedData[row.machine_id]) {
+                    groupedData[row.machine_id] = [];
+                }
+                groupedData[row.machine_id].push(row);
+            });
+            return groupedData;
+        };
+
+
+        const partChartDom = document.getElementById('partcounter-chart')
+        const partChart = echarts.init(partChartDom)
+        const partChartOption = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow',
+                },
+            },
+            xAxis: {
+                type: 'category',
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Quantity',
+            },
+            grid: {
+                top: '15%',
+                bottom: '10%',
+                left: '5%',
+                right: '5%',
+                containLabel: true,
+            },
+        };
+        partChart.setOption(partChartOption)
+        
+        const renderChart = (machineId) => {
+            const machineData = allDataPartCounter[machineId] || []
+
+            const hours = [...new Set(machineData.map(item => item.hour))]
+            const parts = [...new Set(machineData.map(item => item.product_name))]
+
+            const series = parts.map(part => ({
+                name: part,
+                type: 'bar',
+                stack: 'total',
+                data: hours.map(hour => {
+                    const record = machineData.find(row => row.hour === hour && row.product_name === part);
+                    return record ? record.qty : 0;
+                })
+            }));
+            // Update chart options
+            partChart.setOption({
+                xAxis: { data: hours,},
+                legend: { data: parts },
+                series: series
+            });
+        };
+        socket.on('machine-active-part', function(data) {
+            allDataPartCounter = processData(data);
+            renderChart(machineId);
+        })
+        socket.on('machine-status', function(data) {
+            data.forEach(function(machine) {
+                getStatusText(document.getElementById('status_' + machine.machine_id),  machine.state)
+                if(machine.machine_id == machineId){
+                    const headerDiv = document.getElementById('reportPage')
+                    switch (machine.state) {
+                        case 'Running':
+                            headerDiv.className ='card-header bg-success'
+                            return
+                        case 'Setup':
+                            headerDiv.className ='card-header bg-warning'
+                            return
+                        case 'Idle':
+                            headerDiv.className ='card-header bg-secondary'
+                            return
+                        case 'Downtime':
+                            headerDiv.className ='card-header bg-danger'
+                            return
+                        default:
+                            headerDiv.className ='card-header bg-secondary'
+                    }
+                }
+                // writePartName(document.getElementById('part_name_' + machine.machine_id),  machine.product_name)
+            })
+        })
+        socket.on('machine-active-oee', function(oee) {
+            // console.log(oee)
+            oee.oee.forEach(function(row) {
+                if(row.machine_id == machineId){
+                    gaugeData[0].value = row.product_count
+                    gaugeData[1].value = row.product_ideal
+
+                    const date1 = moment(row.min_start)
+                    const date2 = moment(row.shift_end)
+                    const maxAxis = date2.diff(date1, 'seconds') / Number(row.idealct)
+
+                    partData2.innerHTML = row.product_count
+                    idealData2.innerHTML = row.product_ideal
+                    idealData3.innerHTML = maxAxis.toFixed(0)
+
+                    if(partResize == 1){
+                        ringChart.resize()
+                        partResize = 0
+                    }
+                    ringChart.setOption({
+                        series: [
+                            {
+                                max: maxAxis.toFixed(1),
+                                data: gaugeData,
+                                pointer: {
+                                show: false
+                                }
+                            }
+                        ]
+                    });
+                    if(utilResize == 1){
+                        utilChart.resize()
+                        utilResize = 0
+                    }
+                    utilChart.setOption({
+                        series: [
+                            {
+                                data: [{value: row.utilization}],
+                            }
+                        ]
+                    });
+
+                }
+
+                // writePartCounter(document.getElementById('part_' + row.machine_id),  row)
+                // if (span_value.util[row.machine_id]) {
+                //     span_value.util[row.machine_id].innerHTML = row.utilization + '<small>%</small>'
+                // }
+            })
+        })
+        function subscribeToCycletime(machineId) {
+            if (currentMachineId) {
+                unsubscribeFromCycletime(currentMachineId)
+            }
+            socket.emit('join-room', `cycletime-room:${machineId}`)
+            socket.emit('join-room', `machine-data-room:${machineId}`)
+            console.log(`Subscribed to cycletime updates for machine ${machineId}`)
+            currentMachineId = machineId;
+        }
+        function unsubscribeFromCycletime(machineId) {
+            socket.emit('leave-room', `cycletime-room:${machineId}`)
+            socket.emit('leave-room', `machine-data-room:${machineId}`)
+            console.log(`Unsubscribed from cycletime updates for machine ${machineId}`)
+        }
+        socket.on('machine-data', (data) => {
+            ctBox.innerHTML = `${data.machineData.mean_actct} / ${data.machineData.idealct}`
+            cycleBox.innerHTML = `${data.machineData.mean_actct}s`
+            const errorMargin = Number(data.machineData.idealct) * 0.01
+            const difference = Number(data.machineData.mean_actct) - Number(data.machineData.idealct)
+            ctLogo.classList.remove('bg-warning', 'bg-danger', 'bg-success', 'bg-info')
+            if (Math.abs(difference) <= errorMargin) {
+                ctLogo.classList.add('bg-warning')
+            } else if (difference > -errorMargin) {
+                ctLogo.classList.add('bg-danger')
+            } else if (difference < errorMargin) {
+                ctLogo.classList.add('bg-success')
+            }else{
+                ctLogo.classList.add('bg-info')
+            }
+
+            shift.innerHTML = data.machineData.shift
+            prodName.innerHTML = data.machineData.product_name
+            minStart.innerHTML = moment(data.machineData.min_start).format("YYYY-MM-DD HH:mm:ss")
+            reject.innerHTML = data.machineData.reject_count
+
+            productName = data.machineData.product_name
+            startTime = moment(data.machineData.min_start).format("YYYY-MM-DD HH:mm:ss")
+            endTime = moment(data.machineData.max_end).format("YYYY-MM-DD HH:mm:ss")
+
+            if(reloadReject == 1){
+                rejectTable.ajax.reload()
+                reloadReject = 0
+            }
+            if(reloadDowntime == 1){
+                downtimeTable.ajax.reload()
+                reloadDowntime = 0
+            }
+
+
+            downtimeData.innerHTML = moment.utc(data.machineData.downtime * 1000).format("HH:mm:ss")
+            partData.innerHTML = data.machineData.product_count
+            utilData.innerHTML = data.machineData.utilization + '<small>%</small>'
+            arData.innerHTML = data.machineData.availability
+            prData.innerHTML = data.machineData.performance
+            qrData.innerHTML = data.machineData.quality
+            oeeData.innerHTML = data.machineData.oee + '<small>%</small>'
+            
+            utilTime.innerHTML = moment.utc(data.machineData.runtime * 1000).format("HH:mm:ss")
+            idleTime.innerHTML = moment.utc(data.machineData.idletime * 1000).format("HH:mm:ss")
+            setupTime.innerHTML = moment.utc(data.machineData.setuptime * 1000).format("HH:mm:ss")
+            downTime.innerHTML = moment.utc(data.machineData.downtime * 1000).format("HH:mm:ss")
+            timeTime.innerHTML = moment.utc(data.machineData.schedule_time * 1000).format("HH:mm:ss")
+
+            const thresholds = [
+                [Number(data.baseline.oee)*0.9/100, '#FF6E76'], [Number(data.baseline.oee)/100, '#FDDD60'], [1, '#7CFFB2']
+            ]
+
+            updateOEEChart(data.machineData.oee, thresholds)
+        })
+        const CTAllDom = document.getElementById('cycletimeall-chart');
+        const CTAllChart = echarts.init(CTAllDom)
+        const CTAllOption = {
+            tooltip: {
+                trigger: 'axis',
+            },
+            xAxis: {
+                type: 'category',
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: 'CT',
+                },
+            ],
+            grid: {
+                top: '15%',
+                bottom: '10%',
+                left: '5%',
+                right: '5%',
+                containLabel: true,
+            },
+            series: [
+                {
+                    name: 'Cycletime',
+                    type: 'line',
+                    smooth: true,
+                },
+            ],
+        };
+        CTAllChart.setOption(CTAllOption)
+
+
+        let isChartInitialized, utilChartOpen
+        const timeLinex = [
+            {
+                measure: "Machine States",
+                categories: {
+                    "Running": {class: "rect_green", tooltip_html: '<i class="far fa-fw fa-star tooltip_green"></i>' },
+                    "Setup": {class: "rect_yellow", tooltip_html: '<i class="fas fa-fw fa-hourglass-start tooltip_yellow"></i>'},
+                    "Idle": {class: "rect_gray", tooltip_html: '<i class="fas fa-fw fa-user-clock tooltip_gray"></i>'},
+                    "Downtime": {class: "rect_red", tooltip_html: '<i class="fas fa-fw fa-times-circle tooltip_red"></i>'},
+                },
+                data: []
+            }
+        ];
+        var options = {
+            id_div_container: "visavail_container",
+            id_div_graph: "visavail_graph",
+            custom_categories: true,
+			defined_blocks: true,
+			title: {
+				enabled: false
+			},
+        };
+        var vchart
+        
+
+        socket.on('cycletime-data', (data) => {
+            updateChart(data.last10)
+            // console.log(data.all)
+            if(ctResize == 1){
+                CTAllChart.resize()
+            }
+            CTAllChart.setOption({
+                xAxis: {
+                    data: data.all.category,
+                },
+                series: [
+                    {
+                        data: data.all.value,
+                    },
+                ],
+            })
+            let dataTimeline = []
+            data.state.forEach(function(row){
+                dataTimeline.push([
+                    moment(row.start).format('YYYY-MM-DD HH:mm:ss'),
+                    row.state,
+                    moment(row.end).format('YYYY-MM-DD HH:mm:ss'),
+                ])
+            })
+            console.log(dataTimeline)
+            const timeLine = [
+                {
+                    measure: "Machine States",
+                    categories: {
+                        "Running": {class: "rect_green", tooltip_html: '<i class="far fa-fw fa-star tooltip_green"></i>' },
+                        "Setup": {class: "rect_yellow", tooltip_html: '<i class="fas fa-fw fa-hourglass-start tooltip_yellow"></i>'},
+                        "Idle": {class: "rect_gray", tooltip_html: '<i class="fas fa-fw fa-user-clock tooltip_gray"></i>'},
+                        "Downtime": {class: "rect_red", tooltip_html: '<i class="fas fa-fw fa-times-circle tooltip_red"></i>'},
+                    },
+                    data: dataTimeline
+                }
+            ];
+            if(utilChartOpen && isChartInitialized){
+                vchart.updateGraph(null, timeLine)
+            }
+            alarmData.innerHTML = data.alarm
+        })
+        function updateChart(data) {
+            const labels = data.cycletimes.map((item) => item.label)
+            const values = data.cycletimes.map((item) => item.value)
+            CTChart.resize()
+            CTChart.setOption({
+                yAxis: {
+                    data: labels.reverse(),
+                },
+                series: [
+                    {
+                        data: values.reverse(),
+                    },
+                ],
+            })
+
+        }
+        
+        const element = document.getElementById('util-div'); 
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.classList.contains('show')) {
+                    utilChartOpen = true;
+                    if (!isChartInitialized) {
+                        vchart = visavail.generate(options, timeLinex); // Initialize chart
+                        isChartInitialized = true;
+                    }
+                } else {
+                    utilChartOpen = false;
+                }
+            });
+        });
+
+        // Start observing changes to the `class` attribute
+        observer.observe(element, {
+            attributes: true, // Watch for attribute changes
+            attributeFilter: ['class'], // Only watch for `class` attribute
+        });
+        //=============================================================================================================
+        //=============================================================================================================
+        // DOWNTIME SECTION
+        //=============================================================================================================
+        //=============================================================================================================
+        const alarmTabDiv = document.getElementById('alarm-div-tab');
+        alarmTabDiv.addEventListener('click', alarmTR);
+        function alarmTR() {
+            reloadAlarm = 1
+        }
+
+        alarmTable = $('#alarm-table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            deferRender: true,
+            ajax: {
+                url: "/production/alarmOperator",
+                type: "POST",
+                data: function ( data ) {
+                    data.machineId = machineId;
+                    data.start_time = startTime;
+                    data.end_time = endTime;
+                },
+                dataSrc: function (json) {
+                    return json.data; // Process and return only the data portion
+                }
+            },
+            columnDefs: [
+                { orderable: false, targets: [3] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12'p>>",
+                fade: false,
+            
+        })
+
+
+        //=============================================================================================================
+        //=============================================================================================================
+        // DOWNTIME SECTION
+        //=============================================================================================================
+        //=============================================================================================================
+        const downtimeTabDiv = document.getElementById('downtime-div-tab');
+        downtimeTabDiv.addEventListener('click', downtimeTR);
+        function downtimeTR() {
+            reloadDowntime = 1
+        }
+
+        downtimeTable = $('#downtime-table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            deferRender: true,
+            ajax: {
+                url: "/production/downtimeOperator",
+                type: "POST",
+                data: function ( data ) {
+                    data.machineId = machineId;
+                    data.start_time = startTime;
+                    data.end_time = endTime;
+                },
+                dataSrc: function (json) {
+                    return json.data; // Process and return only the data portion
+                }
+            },
+            columnDefs: [
+                { orderable: false, targets: [3] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12'p>>",
+                fade: false,
+            
+        })
+
+
+        //=============================================================================================================
+        //=============================================================================================================
+        // REJECT SECTION
+        //=============================================================================================================
+        //=============================================================================================================
+        const rejectTabDiv = document.getElementById('reject-div-tab');
+        rejectTabDiv.addEventListener('click', rejectTR);
+        function rejectTR() {
+            reloadReject = 1
+        }
+        
+        const modalAdd = document.getElementById('addDataButton');
+        modalAdd.addEventListener('click', addData);
+        function addData() {
+            $('#addDataModal').modal('show')
+        }
+
+        const submitAdd = document.getElementById('addDataSubmit');
+        submitAdd.addEventListener('click', addDataSubmit);
+        function addDataSubmit() {
+            $('#addDataWarning').html('');
+            axios.post('/production/rejectAdd', {
+                reject_count: $('#addreject_count').val(),
+                reject_category: $('#addreject_category').val(),
+                reject_reason: $('#addreject_reason').val(),
+                machineId: machineId,
+            })
+                .then((response) => {
+                    if (response.status === 201) {
+                        $('#addDataWarning').html('');
+                        $('#addDataModal').modal('hide');
+                        $('#addreject_count').val('');
+                        
+                        reloadReject = 1
+                    }
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 400) {
+                        $('#addDataWarning').html(error.response.data.message);
+                    } else if (error.response && error.response.status === 500) {
+                        $('#addDataWarning').html(error.response.data.message);
+                    } else {
+                        $('#addDataWarning').html(error.message);
+                    }
+                });
+        }
+
+        rejectTable = $('#reject-table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            deferRender: true,
+            ajax: {
+                url: "/production/rejectOperator",
+                type: "POST",
+                data: function ( data ) {
+                    data.machineId = machineId;
+                    data.product_name = productName;
+                    data.start_time = startTime;
+                    data.end_time = endTime;
+                },
+                dataSrc: function (json) {
+                    return json.data; // Process and return only the data portion
+                }
+            },
+            columnDefs: [
+                { orderable: false, targets: [3] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12'p>>",
+                fade: false,
+            
+        })
+
+
+        
+    })
+
+
+
+    //=============================================================================================================
+    //=============================================================================================================
+    // REJECT SECTION
+    //=============================================================================================================
+    //=============================================================================================================
+    function show_modal(id) {
+        editId = id;
+        $('#editDataModal').modal('show');
+        axios.post('/production/rejectOperatorRead', { editId: editId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#editreject_count').val(response.data.data.reject_count)
+                    $('#editreject_reason').val(response.data.data.reject_reason)
+                    $('#editreject_category').val(response.data.data.reject_category).trigger('change')
+                    addedDate = response.data.data.added_date
+                    shiftTime = response.data.data.shift_time
+                    shift = response.data.data.shift
+                    $('#editDataWarning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#editDataWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#editDataWarning').html(error.response.data.message);
+                } else {
+                    $('#editDataWarning').html(error.message);
+                }
+            });
+    }
+
+    function editDataSubmit() {
+        $('#editDataWarning').html('');
+        axios.post('/production/rejectOperatorEdit', {
+            reject_count: $('#editreject_count').val(),
+            reject_reason: $('#editreject_reason').val(),
+            reject_category: $('#editreject_category').val(),
+            editId: editId,
+            addedDate: addedDate,
+            shiftTime: shiftTime,
+            machineId: machineId
+        })
+        .then((response) => {
+            if (response.status === 201) {
+                $('#editDataWarning').html('');
+                $('#editDataModal').modal('hide');
+                rejectTable.ajax.reload(null, false);
+            }
+        })
+        .catch((error) => {
+            if (error.response && error.response.status === 400) {
+                $('#editDataWarning').html(error.response.data.message);
+            } else if (error.response && error.response.status === 500) {
+                $('#editDataWarning').html(error.response.data.message);
+            } else {
+                $('#editDataWarning').html(error.message);
+            }
+        })
+    }
+    //=============================================================================================================
+    //=============================================================================================================
+    // DOWNTIME SECTION
+    //=============================================================================================================
+    //=============================================================================================================
+    function show_downtime(id) {
+        editDTId = id;
+        $('#editDowntimeModal').modal('show');
+        axios.post('/production/downtimeOperatorRead', { editId: editDTId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#editstart_time').val(moment(response.data.data.start_time).format('YYYY-MM-DD HH:mm:ss'))
+                    $('#editdowntime_reason').val(response.data.data.downtime_reason)
+                    $('#editdowntime_category').val(response.data.data.downtime_category).trigger('change')
+                    $('#editDowntimeWarning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#editDowntimeWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#editDowntimeWarning').html(error.response.data.message);
+                } else {
+                    $('#editDowntimeWarning').html(error.message);
+                }
+            });
+    }
+    function editDowntimeSubmit() {
+        $('#editDowntimeWarning').html('');
+        axios.post('/production/downtimeOperatorEdit', {
+            downtime_reason: $('#editdowntime_reason').val(),
+            downtime_category: $('#editdowntime_category').val(),
+            editId: editDTId,
+        })
+        .then((response) => {
+            if (response.status === 201) {
+                $('#editDowntimeWarning').html('');
+                $('#editDowntimeModal').modal('hide');
+                downtimeTable.ajax.reload(null, false);
+            }
+        })
+        .catch((error) => {
+            if (error.response && error.response.status === 400) {
+                $('#editDowntimeWarning').html(error.response.data.message);
+            } else if (error.response && error.response.status === 500) {
+                $('#editDowntimeWarning').html(error.response.data.message);
+            } else {
+                $('#editDowntimeWarning').html(error.message);
+            }
+        })
+    }
+    //=============================================================================================================
+    //=============================================================================================================
+    // ALARM SECTION
+    //=============================================================================================================
+    //=============================================================================================================
+    function show_alarm(id) {
+        editALId = id;
+        $('#editAlarmModal').modal('show');
+        axios.post('/production/alarmOperatorRead', { editId: editALId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#editalarm_time').val(moment(response.data.data.start_time).format('YYYY-MM-DD HH:mm:ss'))
+                    $('#editalarm_reason').val(response.data.data.alarm_reason)
+                    $('#editalarm').val(response.data.data.alarm)
+                    $('#editAlarmWarning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#editAlarmWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#editAlarmWarning').html(error.response.data.message);
+                } else {
+                    $('#editAlarmWarning').html(error.message);
+                }
+            });
+    }
+    function editAlarmSubmit() {
+        $('#editAlarmWarning').html('');
+        axios.post('/production/alarmOperatorEdit', {
+            alarm_reason: $('#editalarm_reason').val(),
+            editId: editALId,
+        })
+        .then((response) => {
+            if (response.status === 201) {
+                $('#editAlarmWarning').html('');
+                $('#editAlarmModal').modal('hide');
+                alarmTable.ajax.reload(null, false);
+            }
+        })
+        .catch((error) => {
+            if (error.response && error.response.status === 400) {
+                $('#editAlarmWarning').html(error.response.data.message);
+            } else if (error.response && error.response.status === 500) {
+                $('#editAlarmWarning').html(error.response.data.message);
+            } else {
+                $('#editAlarmWarning').html(error.message);
+            }
+        })
+    }
+</script>
+
+<%- include(footerPath) %>

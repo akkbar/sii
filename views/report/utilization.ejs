@@ -1,0 +1,304 @@
+<%- include(headerPath) %>
+<style>
+    li.buttons-columnVisibility a {
+        cursor:pointer;
+        }
+    li.buttons-columnVisibility.active a {
+        background-color:transparent;
+        color:inherit; 
+        }
+    li.buttons-columnVisibility.active a:hover {
+        background-color:#f5f5f5;
+        color:inherit;
+        }
+    li.buttons-columnVisibility a:before {
+        width:25px;
+        font-family:"Glyphicons Halflings";
+        content:"\e013";
+        color:transparent;
+        padding-right:10px;
+        }
+    li.buttons-columnVisibility.active a:before {
+        color:inherit;
+        }
+    #table_filter label { min-width: 100%;}
+    #table_filter label input{ min-width: 100%;}
+    .expand {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20vw;
+    }
+    .expand:hover {
+        white-space: normal;
+    }
+    .ui-timepicker-container {
+        z-index: 1060 !important; /* Ensure it's higher than the modal's z-index */
+    }
+    .chart-div {
+      width: 100%; /* Adjust to your layout */
+      height: 300px; /* Explicitly set height */
+    }
+</style>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0">Utilization Report
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-12 col-12">
+					<div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-md-3"></div>
+                                <div class="col-md-3">
+                                    <input type="text" id="start-date" class="form-control mr-2 datepicker" size="35" placeholder="Start Date">
+                                </div>
+                                <div class="col-md-2">
+                                    <select id="shift-selector" class="form-control mr-2">
+                                        <option value="all">All Shifts</option>
+                                        <option value="shift1">Shift 1</option>
+                                        <option value="shift2">Shift 2</option>
+                                        <option value="shift3">Shift 3</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="machine-selector" name="machine-selector" class="sel2 form-control" style="width:100%">
+                                        <% if (data.machines.length === 0) { %>
+                                            <option value="">No machine available</option>
+                                        <% } else { %>
+                                            <option value="0">All Machine</option>
+                                            <% data.machines.forEach(function(machine) { %>
+                                                <option value="<%= machine.id %>"><%= machine.mc_name %></option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <button id="apply-filters" class="btn btn-primary btn-sm">Apply</button>
+                                </div>
+                            </div>
+						</div>
+                        <div class="card-body">
+                            <div class="card-body chart-div" id="mainChart"></div>
+                            <h4 id="overallUtil"></h4>
+						</div>
+						<div class="card-body">
+                            <table id="table" class="table" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Time</th>
+                                        <th class="text-center">Shift</th>
+                                        <th class="text-center">Machine</th>
+                                        <th class="text-center">Product</th>
+                                        <th class="text-center">Utilization</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<script type="text/javascript">
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        let startDate, endDate, shift, machineId
+
+        const shiftSelector = document.getElementById('shift-selector')
+        const machineSelector = document.getElementById('machine-selector')
+        const startDateInput = document.getElementById('start-date')
+        const utilbox = document.getElementById('overallUtil')
+
+        function onDateRangeSelected(start, end, label) {
+            startDate = start.format('YYYY-MM-DD')
+            endDate = end.format('YYYY-MM-DD')
+            var today = moment().format("YYYY-MM-DD")
+            sendReportRequest()
+        }
+
+        $('#start-date').daterangepicker({
+            "showDropdowns": true,
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            "alwaysShowCalendars": true,
+            "startDate": moment().startOf('month'),
+            "endDate": moment().endOf('month'),
+        }, onDateRangeSelected)
+
+        shiftSelector.addEventListener('change', function () {
+            const dateRangePicker = $('#start-date').data('daterangepicker')
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null)
+        });
+
+        machineSelector.addEventListener('change', function () {
+            const dateRangePicker = $('#start-date').data('daterangepicker')
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null)
+        });
+
+        const applyFiltersButton = document.getElementById('apply-filters')
+        applyFiltersButton.addEventListener('click', function() {
+            sendReportRequest()
+        });
+        initialize()
+        function initialize(){
+            const dateRangePicker = $('#start-date').data('daterangepicker')
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null)
+        }
+        function sendReportRequest(){
+            shift = document.getElementById('shift-selector').value
+            machineId = document.getElementById('machine-selector').value
+        
+            axios.get(`/production/utilizationReportChart`, {
+                params: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    shift: shift,
+                    machineId: machineId,
+                }
+            })
+            .then(response => {
+                const chartDom = document.getElementById('mainChart');
+                if (chartDom) {
+                    const chart = echarts.init(chartDom)
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            // axisPointer: { type: 'cross' }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: response.data.data.date,
+                        },
+                        yAxis: [
+                            {
+                                type: 'value',
+                                name: 'Utilization (%)',
+                            }
+                        ],
+                        grid: {
+                            top: '15%',
+                            bottom: '10%',
+                            left: '5%',
+                            right: '5%',
+                            containLabel: true,
+                        },
+                        series: [
+                            {
+                                name: 'Utilization (%)',
+                                type: 'line',
+                                data: response.data.data.value,
+                                smooth: true,
+                                barWidth: '40%',
+                                itemStyle: {
+                                    color: '#5470C6'
+                                }
+                            }
+                        ],
+                    };
+                    chart.setOption(option)
+                }
+                utilbox.innerHTML = `Overall Utilization: ${response.data.data.total}%`
+                table.ajax.reload()
+            })
+            .catch(error => {
+                console.error('There was an error loading the report:', error)
+            });
+        }
+
+        var table;
+        $(document).ready(function() {
+            table = $('#table').DataTable({ 
+                processing: true,
+                serverSide: true,
+                order: [],
+                stateSave: true,
+                ajax: {
+                    url: "/production/utilizationReportAjax",
+                    type: "POST",
+                    data: function ( data ) {
+                        data.start_date = startDate
+                        data.end_date = endDate
+                        data.shift = shift
+                        data.machineId = machineId
+                    }
+                },
+                columnDefs: [
+                    // { visible: false, targets: [ 2, 6] },
+                    // { orderable: false, targets: [1] }
+                ],
+                aoColumns: [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                    ],
+                dom:
+                "<'row'<'col-lg-12 col-md-12 col-12'B>>" +
+                "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+                "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+                "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+                buttons: [{
+                        extend:    'copy',
+                        text:      '<i class="fa fa-copy"></i>',
+                        titleAttr: 'Copy',
+                        className: 'btn btn-info'
+                    },{
+                        extend:    'excel',
+                        text:      '<i class="fa fa-file-excel"></i>',
+                        titleAttr: 'Excel',
+                        className: 'btn btn-success'
+                    },{
+                        extend:    'pdf',
+                        text:      '<i class="fa fa-file-pdf"></i>',
+                        titleAttr: 'PDF',
+                        className: 'btn btn-danger'
+                    },{
+                        extend:    'print',
+                        text:      '<i class="fa fa-print"></i>',
+                        titleAttr: 'Print',
+                        className: 'btn btn-warning',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                        messageTop: 'Alarm'
+                    },{
+                        extend: 'colvis',
+                        className: 'btn btn-default',
+                        postfixButtons: ['colvisRestore']
+                    }],
+                    fade: false,
+                language: {
+                    buttons: {
+                        colvis: 'Columns'
+                    },
+                    searchPlaceholder: "Search records",
+                    search: ""
+                }
+            })
+        })
+    })
+	
+
+</script>
+
+<%- include(footerPath) %>

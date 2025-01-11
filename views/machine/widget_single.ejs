@@ -1,0 +1,43 @@
+<div class="col-lg-<%- data.widget.collg %> col-md-<%- data.widget.colmd %> col-sm-<%- data.widget.colsm %> col-<%- data.widget.col %>">
+    <div class="card">
+        <div class="card-body p-1 col-container">
+            <% let currentRow = -1; %>
+            <% data.layout.forEach(col => { %>
+                <% if (col.row !== currentRow) { %>
+                    <% if (currentRow !== -1) { %>
+                        </div>
+                    <% } %>
+                    <div class="row">
+                    <% currentRow = col.row; %>
+                <% } %>
+                <div class="<%= col.col_class %> col-member" id="<%= col.col_id %>" data-id="<%= col.id %>" style="border: 1px solid black;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor=''">
+                    Row<%= currentRow %> <%= col.col_id %>
+                    <% if (col.content == 2) { %>
+                        <!-- Line Chart Container -->
+                        <div id="line-chart-<%= col.col_id %>"></div>
+                    <% } else if (col.content == 3) { %>
+                        <!-- Progress Gauge Container -->
+                        <canvas id="gauge-canvas-<%= col.col_id %>"></canvas>
+                    <% } else if (col.content == 4) { %>
+                        <!-- Gauge with Area Container -->
+                        <canvas id="gauge-area-canvas-<%= col.col_id %>"></canvas>
+                    <% } else if (col.content == 5) { %>
+                        <!-- Vertical Progress Bar Container -->
+                        <canvas id="vertical-progress-<%= col.col_id %>"></canvas>
+                    <% } else if (col.content == 6) { %>
+                        <!-- Horizontal Progress Bar Container -->
+                        <canvas id="horizontal-progress-<%= col.col_id %>"></canvas>
+                    <% } %>
+                </div>
+            <% }) %>
+            </div>
+        </div>
+        <div class="card-footer text-center">
+            <button type="button" id="add-row" class="btn btn-success my-3"><i class="fa fa-plus"></i></button>
+            <button type="button" id="set-row" class="btn btn-primary my-3"><i class="fa fa-cog"></i></button>
+        </div>
+    </div>
+</div>
+<script>
+    
+</script>

@@ -1,0 +1,174 @@
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registration</title>
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&amp;display=fallback"> -->
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <link rel="stylesheet" href="/css/adminlte.min.css?v=3.2.0">
+    <body class="register-page" style="min-height: 570.781px;">
+        <div class="register-box">
+            <div class="card card-widget widget-user-2">
+                <div class="widget-user-header">
+                    <div class="widget-user-image">
+                      <img src="/img/barka.png" alt="User Avatar">
+                    </div>
+                    <h3 class="widget-user-username">Barka Industries</h3>
+                    <h5 class="widget-user-desc">Register a new account</h5>
+                </div>
+                <div class="card-body">
+                    <p style="color: red;" id="errorMessage"></p>
+                    <form id="registerForm">
+                        <div class="row mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="fullname" id="fullname" placeholder="Full name" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <span class="fas fa-user"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="error-message text-danger"></span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="username" id="username" placeholder="Username" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <span class="fas fa-envelope"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="error-message text-danger"></span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" id="password" oninput="validatePassword();" placeholder="Password" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <span class="fas fa-lock"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="error-message text-danger"></span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="repassword" id="repassword"  oninput="validatePassword();" placeholder="Retype password" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <span class="fas fa-lock"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="error-message text-danger"></span>
+                        </div>
+                        <div class="row">
+                            <div class="col-8">
+                                <!-- <div class="icheck-primary">
+                                    <input type="checkbox" id="agreeTerms" name="terms" value="agree">
+                                    <label for="agreeTerms">
+                                        I agree to the <a href="#">terms</a>
+                                    </label>
+                                </div> -->
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-primary btn-block">Register</button>
+                            </div>
+                        </div>
+                    </form>
+                    <!-- <div class="social-auth-links text-center">
+                        <p>- OR -</p>
+                        <a href="#" class="btn btn-block btn-primary">
+                            <i class="fab fa-facebook mr-2"></i>
+                            Sign up using Facebook
+                        </a>
+                        <a href="#" class="btn btn-block btn-danger">
+                            <i class="fab fa-google-plus mr-2"></i>
+                            Sign up using Google+
+                        </a>
+                    </div> -->
+                    <a href="/" class="text-center">I already have a user account</a>
+                </div>
+            </div>
+        </div>
+        <script src="/plugins/jquery/jquery.min.js"></script>
+        <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="/js/adminlte.min.js?v=3.2.0"></script>
+        <script>
+            document.getElementById('registerForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                document.querySelectorAll('.form-control').forEach(input => {
+                    input.classList.remove('is-invalid');
+                });
+
+                const formData = {
+                    fullname: document.getElementById('fullname').value.trim(),
+                    username: document.getElementById('username').value.trim(),
+                    password: document.getElementById('password').value.trim(),
+                    repassword: document.getElementById('repassword').value.trim(),
+                };
+                try {
+                    const response = await fetch('/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
+                    });
+
+                    const data  = await response.json();
+
+                    if (data.success) {
+                        window.location.href = '/login';
+                    } else {
+                        document.getElementById('errorMessage').textContent = data.message;
+                        for (const [field, message] of Object.entries(data.errors)) {
+                            const input = document.getElementById(field);
+                            if (input) {
+                                input.classList.add('is-invalid');
+                                const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                                if (errorElement) {
+                                    errorElement.textContent = message;
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+            function validatePassword() {
+                const passwordInput = document.getElementById('password').value;
+                const repasswordInput = document.getElementById('repassword').value;
+                const passwordError = document.getElementById('errorMessage');
+
+                // Password policy regex
+                const passwordPolicyRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/;
+
+                if (!passwordPolicyRegex.test(passwordInput)) {
+                    passwordError.textContent =
+                    'Password must be at least 8 characters, include one uppercase letter, one symbol, and one number.';
+                } else {
+                    passwordError.textContent = ''; // Clear error message
+                }
+                if(repasswordInput != ''){
+                    const input = document.getElementById('repassword');
+                    if(passwordInput == repasswordInput){
+                        input.classList.remove('is-invalid');
+                        const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                        if (errorElement) {
+                            errorElement.textContent = '';
+                        }
+                    }else{
+                        input.classList.add('is-invalid');
+                        const errorElement = input.parentElement.parentElement.querySelector('.error-message');
+                        if (errorElement) {
+                            errorElement.textContent = 'Passwords do not match.';
+                        }
+                    }
+                }
+
+            }
+        </script>
+    </body>
+  </html>

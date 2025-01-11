@@ -1,0 +1,115 @@
+<%- include(headerPath) %>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0">Create Machine Widget
+                        <button onclick="adddisplay()" class="btn btn-success float-right"><i class="fa fa-plus"></i> Add</button>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <% data.widgets.forEach(function(widget) { %>
+            <div class="row">
+                <div class="col-sm-12">
+                    <h3><%- widget.display_name %> 
+                        <a href="/machine/editwidget/<%- widget.id %>" class="btn btn-primary float-right"><i class="fa fa-pencil-alt"></i> Edit</a>
+                        <button onclick="delete_modal('<%- widget.id %>', '<%- widget.display_name %>')" class="btn btn-danger float-right"><i class="fa fa-trash-alt"></i> Delete</button>
+                    </h3>
+                </div>
+			</div>
+            <div class="row">
+				<%- widget.display_html %>
+			</div>
+            <% }); %>
+        </div>
+    </section>
+</div>
+<div class="modal fade" id="add_display">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Widget</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Widget Name</label><br>
+                            <input type="text" class="form-control" id="adddisplay_name" value=""/>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="add_display_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="add_display_exe()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/plugins/select2/js/select2.min.js"></script>
+<script type="text/javascript">
+    
+    function delete_modal(id, name) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delete (' + name + ')',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, do it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post('/machine/removeWidget', { id: id })
+                    .then((response) => {
+                        if (response.status === 201) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch((error) => {
+                        Swal.fire('Error!', error.response.data, 'error');
+                    });
+            }
+        });
+    }
+    function adddisplay(){
+        $('#add_display').modal('show');
+    }
+    function add_display_exe() {
+        document.getElementById('add_display_warning').innerHTML = '';
+        const displayName = document.getElementById('adddisplay_name').value;
+        axios.post('/machine/createWidget', { display_name: displayName })
+            .then(function (response) {
+                if (response.status === 201) {
+                    document.getElementById('add_display_warning').innerHTML = '';
+                    $('#add_display').modal('hide');
+                    document.getElementById('adddisplay_name').value = ''; // Clear the input field
+                    window.location.reload();
+                }
+            })
+            .catch(function (error) {
+                if (error.response) {
+                    if (error.response.status === 400) {
+                        document.getElementById('add_display_warning').innerHTML = error.response.data.message;
+                    } else if (error.response.status === 500) {
+                        document.getElementById('add_display_warning').innerHTML = error.response.data.message;
+                    } else {
+                        document.getElementById('add_display_warning').innerHTML = error.message;
+                    }
+                } else {
+                    document.getElementById('add_display_warning').innerHTML = 'An unexpected error occurred.';
+                }
+            });
+    }
+	
+</script>
+
+<%- include(footerPath) %>

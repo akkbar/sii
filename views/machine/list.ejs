@@ -1,0 +1,533 @@
+<%- include(headerPath) %>
+<style>
+    li.buttons-columnVisibility a {
+        cursor:pointer;
+        }
+    li.buttons-columnVisibility.active a {
+        background-color:transparent;
+        color:inherit; 
+        }
+    li.buttons-columnVisibility.active a:hover {
+        background-color:#f5f5f5;
+        color:inherit;
+        }
+    li.buttons-columnVisibility a:before {
+        width:25px;
+        font-family:"Glyphicons Halflings";
+        content:"\e013";
+        color:transparent;
+        padding-right:10px;
+        }
+    li.buttons-columnVisibility.active a:before {
+        color:inherit;
+        }
+    #table_filter label { min-width: 100%;}
+    #table_filter label input{ min-width: 100%;}
+    .expand {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20vw;
+    }
+    .expand:hover {
+        white-space: normal;
+    }
+</style>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0">Manage Machines
+                        <button onclick="addMachine()" class="btn btn-success float-right"><i class="fa fa-plus"></i> Add</button>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-12 col-12">
+					<div class="card">
+						<div class="card-body">
+                            <table id="table" class="table" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Name</th>
+                                        <th class="text-center">Type</th>
+                                        <th class="text-center">Group</th>
+                                        <th class="text-center">IP</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<div class="modal fade" id="add_machine">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Machine</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Machine's Name</label><br>
+                            <input type="text" class="form-control" id="addMachineName" name="addMachineName" value=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Machine's Type</label><br>
+                            <select id="addMachineType" name="addMachineType" class="sel2 form-control" style="width:100%">
+                                <option value="1" data-port="8082">Haas CNC MTConnect</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Machine's Group</label><br>
+                            <select id="addMachineGroup" name="addMachineGroup" class="sel2 form-control" style="width:100%">
+                                <% if (data.machineGroups.length === 0) { %>
+                                    <option value="">No machine groups available</option>
+                                <% } else { %>
+                                    <% data.machineGroups.forEach(function(group) { %>
+                                        <option value="<%= group.id %>"><%= group.group_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>IP Number</label><br>
+                            <input type="text" class="form-control" id="addMachineIP" name="addMachineIP" value=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Port</label><br>
+                            <input type="text" class="form-control" id="addMachinePort" name="addMachinePort" value=""/>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="addMachineWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="addMachineExe()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit_machine">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Machine</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Machine's Name</label><br>
+                            <input type="text" class="form-control" id="editMachineName" name="editMachineName" value=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Machine's Type</label><br>
+                            <select id="editMachineType" name="editMachineType" class="sel2 form-control" style="width:100%">
+                                <option value="1" data-port="8082">Haas CNC MTConnect</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Machine's Group</label><br>
+                            <select id="editMachineGroup" name="editMachineGroup" class="sel2 form-control" style="width:100%">
+                                <% if (data.machineGroups.length === 0) { %>
+                                    <option value="">No machine groups available</option>
+                                <% } else { %>
+                                    <% data.machineGroups.forEach(function(group) { %>
+                                        <option value="<%= group.id %>"><%= group.group_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>IP Number</label><br>
+                            <input type="text" class="form-control" id="editMachineIP" name="editMachineIP" value=""/>
+                        </div>
+                        <div class="form-group">
+                            <label>Port</label><br>
+                            <input type="text" class="form-control" id="editMachinePort" name="editMachinePort" value=""/>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="editMachineWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editMachineExe()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="tags_machine">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Used Tags</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Tag Name</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Select</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tagsTableBody">
+                        <!-- Table rows will be added dynamically by JavaScript -->
+                    </tbody>
+                </table>
+                <span class="text-red" id="tagsMachineWarning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveSelectedTags()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    const tagsTableBody = document.getElementById('tagsTableBody');
+    let selectedTagsCount = 0;
+    const tags = [
+        <% if (data.tags.length === 0) { %>
+            
+        <% } else { %>
+            <% data.tags.forEach(function(tag) { %>
+                { value: "<%= tag.tag_mc %>", name: "<%= tag.tag_name %>", tipe: "<%= tag.tag_type == 1 ? "Number" : "Text" %>" },
+            <% }); %>
+        <% } %>
+    ];
+    $(document).ready(function () {
+		$(".sel2").select2({
+			placeholder: "Please Select",
+            minimumResultsForSearch: 20
+        });
+	});
+    var editId;
+    function tags_modal(id) {
+        editId = id;
+        $('#tags_machine').modal('show');
+        axios.post('/machine/read', { editId: editId })
+            .then((response) => {
+                if (response.status === 201) {
+                    const savedTagsString = response.data.machine.tags
+                    const savedTags = savedTagsString ? savedTagsString.split(',') : [];
+                    tagsTableBody.innerHTML = '';
+                    // Repopulate the table and check the appropriate checkboxes
+                    tags.forEach((tag, index) => {
+                        const row = document.createElement('tr');
+                        const isChecked = savedTags.includes(tag.value) ? 'checked' : '';
+                        
+                        row.innerHTML = `
+                            <th scope="row">${index + 1}</th>
+                            <td>${tag.name}</td>
+                            <td>${tag.tipe}</td>
+                            <td><input type="checkbox" class="tag-checkbox" value="${tag.value}" data-name="${tag.name}" onchange="handleTagSelection(this)" ${isChecked}></td>
+                        `;
+                        tagsTableBody.appendChild(row);
+                    });
+
+                    selectedTagsCount = savedTags.length;
+                    $('#tagsMachineWarning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#tagsMachineWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#tagsMachineWarning').html(error.response.data.message);
+                } else {
+                    $('#tagsMachineWarning').html(error.message);
+                }
+            });
+    }
+    function show_modal(id) {
+        editId = id;
+        $('#edit_machine').modal('show');
+        axios.post('/machine/read', { editId: editId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#editMachineName').val(response.data.machine.mc_name);
+                    $('#editMachineType').val(response.data.machine.mc_type).trigger('change');
+                    load_port()
+                    $('#editMachineGroup').val(response.data.machine.mc_group).trigger('change');
+                    $('#editMachineIP').val(response.data.machine.ip);
+                    $('#editMachinePort').val(response.data.machine.port);
+                    $('#editMachineWarning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#editMachineWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#editMachineWarning').html(error.response.data.message);
+                } else {
+                    $('#editMachineWarning').html(error.message);
+                }
+            });
+    }
+
+    function editMachineExe() {
+        $('#editMachineWarning').html('');
+        axios.post('/machine/update', {
+            mc_name: $('#editMachineName').val(),
+            mc_type: $('#editMachineType').val(),
+            mc_group: $('#editMachineGroup').val(),
+            ip: $('#editMachineIP').val(),
+            port: $('#editMachinePort').val(),
+            editId: editId
+        })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#editMachineWarning').html('');
+                    $('#edit_machine').modal('hide');
+                    table.ajax.reload(null, false);
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#editMachineWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#editMachineWarning').html(error.response.data.message);
+                } else {
+                    $('#editMachineWarning').html(error.message);
+                }
+            });
+    }
+
+    function delete_modal(id, mc_name) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delete (' + mc_name + ')',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, do it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post('/machine/remove', { id: id })
+                    .then((response) => {
+                        if (response.status === 201) {
+                            table.ajax.reload(null, false);
+                        }
+                    })
+                    .catch((error) => {
+                        Swal.fire('Error!', error.response.data, 'error');
+                    });
+            }
+        });
+    }
+
+    function addMachine() {
+        $('#add_machine').modal('show');
+        load_port()
+    }
+
+    function addMachineExe() {
+        $('#addMachineWarning').html('');
+        axios.post('/machine/create', {
+            mc_name: $('#addMachineName').val(),
+            mc_type: $('#addMachineType').val(),
+            mc_group: $('#addMachineGroup').val(),
+            ip: $('#addMachineIP').val(),
+            port: $('#addMachinePort').val()
+        })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#addMachineWarning').html('');
+                    $('#add_machine').modal('hide');
+                    $('#addMachineName').val('');
+                    $('#addMachineIP').val('');
+                    $('#addMachinePort').val('');
+                    table.ajax.reload(null, false);
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#addMachineWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#addMachineWarning').html(error.response.data.message);
+                } else {
+                    $('#addMachineWarning').html(error.message);
+                }
+            });
+    }
+
+	var table;
+    $(document).ready(function() {
+        // let info
+        table = $('#table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: false,
+            ajax: {
+                url: "/machine",
+                type: "POST",
+                data: function ( data ) {
+                    // const pageInfo = $('#table').DataTable().page.info();
+                    // data.start = info ? info.start : 0 // Update `start` with the correct value
+                    // console.log("Modified AJAX Data Sent to Server:", pageInfo); // Debug the data sent
+                    // return data; // Return the modified data object
+                }
+            },
+            columnDefs: [
+                // { visible: false, targets: [ 2, 6] },
+                { orderable: false, targets: [3,4,5] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12'B>>" +
+            "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+            buttons: [{
+                    extend:    'copy',
+                    text:      '<i class="fa fa-copy"></i>',
+                    titleAttr: 'Copy',
+                    className: 'btn btn-info'
+                },{
+                    extend:    'excel',
+                    text:      '<i class="fa fa-file-excel"></i>',
+                    titleAttr: 'Excel',
+                    className: 'btn btn-success'
+                },{
+                    extend:    'pdf',
+                    text:      '<i class="fa fa-file-pdf"></i>',
+                    titleAttr: 'PDF',
+                    className: 'btn btn-danger'
+                },{
+                    extend:    'print',
+                    text:      '<i class="fa fa-print"></i>',
+                    titleAttr: 'Print',
+                    className: 'btn btn-warning',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                    messageTop: 'Alarm'
+                },{
+                    extend: 'colvis',
+                    className: 'btn btn-default',
+                    postfixButtons: ['colvisRestore']
+                }],
+                fade: false,
+            language: {
+                buttons: {
+                    colvis: 'Columns'
+                },
+                searchPlaceholder: "Search records",
+                search: ""
+            }
+        });
+        // $('#table').on('page.dt', function() {
+        //     info = $('#table').DataTable().page.info();
+        //     table.draw(false);
+        // });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        load_port()
+    });
+    function load_port(){
+        const selMachineType = document.getElementById('addMachineType');
+        const portInput = document.getElementById('addMachinePort');
+        const selectedOption = selMachineType.options[selMachineType.selectedIndex];
+        const portValue = selectedOption.getAttribute('data-port');
+        if (portValue) {
+            portInput.value = portValue;
+        } else {
+            portInput.value = '';
+        }
+        const eselMachineType = document.getElementById('editMachineType');
+        const eportInput = document.getElementById('editMachinePort');
+        const eselectedOption = eselMachineType.options[eselMachineType.selectedIndex];
+        const eportValue = eselectedOption.getAttribute('data-port');
+        if (eportValue) {
+            eportInput.value = eportValue;
+        } else {
+            eportInput.value = '';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+
+        tags.forEach((tag, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <th scope="row">${index + 1}</th>
+                <td>${tag.name}</td>
+                <td>${tag.tipe}</td>
+                <td><input type="checkbox" class="tag-checkbox" value="${tag.value}" data-name="${tag.name}" onchange="handleTagSelection(this)"></td>
+            `;
+            tagsTableBody.appendChild(row);
+        });
+
+        window.handleTagSelection = function(checkbox) {
+            if (checkbox.checked) {
+                if (selectedTagsCount >= 15) {
+                    alert('You can only select up to 15 tags.');
+                    checkbox.checked = false;
+                } else {
+                    selectedTagsCount++;
+                }
+            } else {
+                selectedTagsCount--;
+            }
+        };
+
+        window.saveSelectedTags = function() {
+            const selectedCheckboxes = document.querySelectorAll('.tag-checkbox:checked');
+            const selectedValues = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const selectedTagsString = selectedValues.join(',');
+            saveTagsToDatabase(selectedTagsString);
+        };
+
+        function saveTagsToDatabase(tagsString) {
+            axios.post('/machine/saveTags', { tags: tagsString, id: editId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#tags_machine').modal('hide');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#tagsMachineWarning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#tagsMachineWarning').html(error.response.data.message);
+                } else {
+                    $('#tagsMachineWarning').html(error.message);
+                }
+            });
+        }
+    });
+
+</script>
+
+<%- include(footerPath) %>

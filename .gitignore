@@ -1,0 +1,5 @@
+node_modules
+Dockerfile
+app.yml
+docker/mongo-data
+docker/mysql-data

@@ -1,0 +1,302 @@
+<%- include(headerPath) %>
+<style>
+    li.buttons-columnVisibility a {
+        cursor:pointer;
+        }
+    li.buttons-columnVisibility.active a {
+        background-color:transparent;
+        color:inherit; 
+        }
+    li.buttons-columnVisibility.active a:hover {
+        background-color:#f5f5f5;
+        color:inherit;
+        }
+    li.buttons-columnVisibility a:before {
+        width:25px;
+        font-family:"Glyphicons Halflings";
+        content:"\e013";
+        color:transparent;
+        padding-right:10px;
+        }
+    li.buttons-columnVisibility.active a:before {
+        color:inherit;
+        }
+    #table_filter label { min-width: 100%;}
+    #table_filter label input{ min-width: 100%;}
+    .expand {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20vw;
+    }
+    .expand:hover {
+        white-space: normal;
+    }
+    .ui-timepicker-container {
+        z-index: 1060 !important; /* Ensure it's higher than the modal's z-index */
+    }
+    .chart-div {
+      width: 100%; /* Adjust to your layout */
+      height: 300px; /* Explicitly set height */
+    }
+</style>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0">Alarm Report
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-12 col-12">
+					<div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-md-5"></div>
+                                <div class="col-md-3">
+                                    <input type="text" id="start-date" class="form-control mr-2 datepicker" size="35" placeholder="Start Date">
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="machine-selector" name="machine-selector" class="sel2 form-control" style="width:100%">
+                                        <% if (data.machines.length === 0) { %>
+                                            <option value="">No machine available</option>
+                                        <% } else { %>
+                                            <option value="0">All Machine</option>
+                                            <% data.machines.forEach(function(machine) { %>
+                                                <option value="<%= machine.id %>"><%= machine.mc_name %></option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <button id="apply-filters" class="btn btn-primary btn-sm">Apply</button>
+                                </div>
+                            </div>
+						</div>
+						<div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-7 col-12">
+                                    <table id="table-alarm" class="table" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Alarm</th>
+                                                <th class="text-center">Events</th>
+                                                <th class="text-center">Machines</th>
+                                                <th class="text-center">Detail</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-lg-5 col-12">
+                                    <p>Detail of Alarm: <span id="alarm-head"></span></p>
+                                    <table id="detail" class="table" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Time</th>
+                                                <th class="text-center">Machine</th>
+                                                <th class="text-center">Reason</th>
+                                                <th class="text-center">Operator</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<script type="text/javascript">
+    
+    let tableAlarm;
+    var tableDetail;
+    const alarmHead = document.getElementById('alarm-head')
+    document.addEventListener('DOMContentLoaded', function () {
+        let startDate, endDate, machineId
+
+        const machineSelector = document.getElementById('machine-selector')
+        const startDateInput = document.getElementById('start-date')
+
+        function onDateRangeSelected(start, end, label) {
+            startDate = start.format('YYYY-MM-DD')
+            endDate = end.format('YYYY-MM-DD')
+            var today = moment().format("YYYY-MM-DD")
+            sendReportRequest()
+        }
+
+        $('#start-date').daterangepicker({
+            "showDropdowns": true,
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            "alwaysShowCalendars": true,
+            "startDate": moment().startOf('month'),
+            "endDate": moment().endOf('month'),
+        }, onDateRangeSelected)
+
+        machineSelector.addEventListener('change', function () {
+            const dateRangePicker = $('#start-date').data('daterangepicker')
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null)
+        });
+
+        const applyFiltersButton = document.getElementById('apply-filters')
+        applyFiltersButton.addEventListener('click', function() {
+            sendReportRequest()
+        });
+        initialize()
+        function initialize(){
+            const dateRangePicker = $('#start-date').data('daterangepicker')
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null)
+        }
+
+        tableAlarm = $('#table-alarm').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            ajax: {
+                url: "/production/alarmReportAjax",
+                type: "POST",
+                data: function ( data ) {
+                    data.start_date = startDate
+                    data.end_date = endDate
+                    data.machineId = machineId
+                }
+            },
+            columnDefs: [
+                // { visible: false, targets: [ 2, 6] },
+                // { orderable: false, targets: [1] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12'B>>" +
+            "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+            buttons: [{
+                    extend:    'copy',
+                    text:      '<i class="fa fa-copy"></i>',
+                    titleAttr: 'Copy',
+                    className: 'btn btn-info'
+                },{
+                    extend:    'excel',
+                    text:      '<i class="fa fa-file-excel"></i>',
+                    titleAttr: 'Excel',
+                    className: 'btn btn-success'
+                },{
+                    extend:    'pdf',
+                    text:      '<i class="fa fa-file-pdf"></i>',
+                    titleAttr: 'PDF',
+                    className: 'btn btn-danger'
+                },{
+                    extend:    'print',
+                    text:      '<i class="fa fa-print"></i>',
+                    titleAttr: 'Print',
+                    className: 'btn btn-warning',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                    messageTop: 'Alarm'
+                },{
+                    extend: 'colvis',
+                    className: 'btn btn-default',
+                    postfixButtons: ['colvisRestore']
+                }],
+                fade: false,
+            language: {
+                buttons: {
+                    colvis: 'Columns'
+                },
+                searchPlaceholder: "Search records",
+                search: ""
+            }
+        })
+
+        function sendReportRequest(){
+            if(tableAlarm){
+                tableAlarm.ajax.reload()
+            }
+        }
+
+
+        tableDetail = $('#detail').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            ajax: {
+                url: "/production/alarmReportDetail",
+                type: "POST",
+                data: function ( data ) {
+                    data.start_date = startDate
+                    data.end_date = endDate
+                    data.alarmId = alarmId
+                    data.machineId = machineId
+                }
+            },
+            columnDefs: [
+                // { visible: false, targets: [ 2, 6] },
+                // { orderable: false, targets: [1] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-5 col-md-5 col-12'><'col-lg-7 col-md-7 col-12'p>>",
+            
+        })
+
+    })
+    let alarmId = 0
+    function load_data(id){
+        alarmId = id
+        tableDetail.ajax.reload()
+        axios.post('/production/alarmOperatorRead', { editId: alarmId })
+            .then((response) => {
+                if (response.status === 201) {
+                    alarmHead.innerHTML = response.data.data.alarm
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    alarmHead.innerHTML = error.response.data.message
+                } else if (error.response && error.response.status === 500) {
+                    alarmHead.innerHTML = error.response.data.message
+                } else {
+                    alarmHead.innerHTML = error.message
+                }
+            });
+    }
+	
+
+    
+</script>
+
+<%- include(footerPath) %>
+

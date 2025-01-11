@@ -1,0 +1,342 @@
+<%- include(headerPath) %>
+<style>
+    li.buttons-columnVisibility a {
+        cursor:pointer;
+        }
+    li.buttons-columnVisibility.active a {
+        background-color:transparent;
+        color:inherit; 
+        }
+    li.buttons-columnVisibility.active a:hover {
+        background-color:#f5f5f5;
+        color:inherit;
+        }
+    li.buttons-columnVisibility a:before {
+        width:25px;
+        font-family:"Glyphicons Halflings";
+        content:"\e013";
+        color:transparent;
+        padding-right:10px;
+        }
+    li.buttons-columnVisibility.active a:before {
+        color:inherit;
+        }
+    #table_filter label { min-width: 100%;}
+    #table_filter label input{ min-width: 100%;}
+    .expand {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20vw;
+    }
+    .expand:hover {
+        white-space: normal;
+    }
+</style>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0"><i class="fa fa-users"></i> Manage Users
+                        <button onclick="addData()" class="btn btn-success float-right"><i class="fa fa-plus"></i> Add</button>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-8 col-12">
+					<div class="card">
+						<div class="card-body">
+                            <table id="table" class="table" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Name</th>
+                                        <th class="text-center">Role</th>
+                                        <th class="text-center">Last Login</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<div class="modal fade" id="add_data">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Users</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Login username</label><br>
+                            <input type="text" class="form-control" id="addusername" value=""/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Fullname</label><br>
+                            <input type="text" class="form-control" id="addfullname" value=""/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Role</label><br>
+                            <select id="adduser_role" name="adduser_role" class="sel2 form-control" style="width:100%">
+                                <option value="Operator">Operator</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Password</label><br>
+                            All new account added by this feature will be registered using <b>Barka123654</b> as default Password
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="add_data_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="add_data_exe()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit_data">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit User</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Role</label><br>
+                            <select id="edituser_role" name="edituser_role" class="sel2 form-control" style="width:100%">
+                                <option value="Operator">Operator</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Reset and Use <b>Barka123654</b> as Password: <input type="checkbox" id="editReset" name="editReset" value="1"></label><br>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="edit_data_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="edit_data_exe()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/plugins/select2/js/select2.min.js"></script>
+<script type="text/javascript">
+    var editId;
+    function show_modal(id) {
+        editId = id;
+        $('#edit_data').modal('show');
+        axios.post('/users/get', { editId: editId })
+            .then((response) => {
+                if (response.status === 201) {
+                    $('#edituser_role').val(response.data.data.user_role).trigger('change')
+                    $('#edit_data_warning').html('');
+                }
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 400) {
+                    $('#edit_data_warning').html(error.response.data.message);
+                } else if (error.response && error.response.status === 500) {
+                    $('#edit_data_warning').html(error.response.data.message);
+                } else {
+                    $('#edit_data_warning').html(error.message);
+                }
+            });
+    }
+    function edit_data_exe() {
+        document.getElementById('edit_data_warning').innerHTML = '';
+        axios.post('/users/updateUser', {
+            user_role: $('#edituser_role').val(),
+            isreset: $('#editReset').is(':checked') ? 1 : 0,
+            editId: editId
+        })
+        .then(function (response) {
+            if (response.status === 201) {
+                document.getElementById('edit_data_warning').innerHTML = '';
+                $('#edit_data').modal('hide');
+                table.ajax.reload(null, false);
+            }
+        })
+        .catch(function (error) {
+            if (error.response) {
+                if (error.response.status === 400) {
+                    document.getElementById('edit_data_warning').innerHTML = error.response.data.message;
+                } else if (error.response.status === 500) {
+                    document.getElementById('edit_data_warning').innerHTML = error.response.data.message;
+                } else {
+                    document.getElementById('edit_data_warning').innerHTML = error.message;
+                }
+            } else {
+                document.getElementById('edit_data_warning').innerHTML = 'An unexpected error occurred.';
+            }
+        });
+    }
+    function delete_modal(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delete',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, do it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post('/users/removeUser', { id: id })
+                    .then((response) => {
+                        if (response.status === 201) {
+                            table.ajax.reload(null, false);
+                        }
+                    })
+                    .catch((error) => {
+                        Swal.fire('Error!', error.response.data, 'error');
+                    });
+            }
+        });
+    }
+    function addData(){
+        $('#add_data').modal('show');
+    }
+    function add_data_exe() {
+        document.getElementById('add_data_warning').innerHTML = '';
+        const userName = document.getElementById('addusername').value;
+        const fullName = document.getElementById('addfullname').value;
+        const userRole = document.getElementById('adduser_role').value;
+        axios.post('/users/create', { username: userName, fullname: fullName, user_role: userRole })
+            .then(function (response) {
+                if (response.status === 201) {
+                    document.getElementById('add_data_warning').innerHTML = '';
+                    $('#add_data').modal('hide');
+                    document.getElementById('addusername').value = '';
+                    document.getElementById('addfullname').value = '';
+                    table.ajax.reload(null, false);
+                }
+            })
+            .catch(function (error) {
+                if (error.response) {
+                    if (error.response.status === 400) {
+                        document.getElementById('add_data_warning').innerHTML = error.response.data.message;
+                    } else if (error.response.status === 500) {
+                        document.getElementById('add_data_warning').innerHTML = error.response.data.message;
+                    } else {
+                        document.getElementById('add_data_warning').innerHTML = error.message;
+                    }
+                } else {
+                    document.getElementById('add_data_warning').innerHTML = 'An unexpected error occurred.';
+                }
+            });
+    }
+	var table;
+    $(document).ready(function() {
+        table = $('#table').DataTable({ 
+            processing: true,
+            serverSide: true,
+            order: [],
+            stateSave: true,
+            ajax: {
+                url: "/users",
+                type: "POST",
+                data: function ( data ) {
+                    // data.start_date = $('#start_date').val();
+                    // data.end_date = $('#end_date').val();
+                    // data.start_time = $('#start_time').val();
+                    // data.end_time = $('#end_time').val();
+                    // data.eq_id = $('#eq_id').val();
+                    // data.area = $('#area').val();
+                    // data.status = $('#status').val();
+                }
+            },
+            // "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+            //     if ( aData[9] != "" ){
+            //         $('td', nRow).css('background-color', '#a4d3eb');
+            //     }
+            // },
+            columnDefs: [
+                // { visible: false, targets: [ 2, 6] },
+                { orderable: false, targets: [3] }
+            ],
+            aoColumns: [
+                null,
+                null,
+                null,
+                null
+                ],
+            dom:
+            "<'row'<'col-lg-12 col-md-12 col-12'B>>" +
+            "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+            "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+            "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+            buttons: [{
+                    extend:    'copy',
+                    text:      '<i class="fa fa-copy"></i>',
+                    titleAttr: 'Copy',
+                    className: 'btn btn-info'
+                },{
+                    extend:    'excel',
+                    text:      '<i class="fa fa-file-excel"></i>',
+                    titleAttr: 'Excel',
+                    className: 'btn btn-success'
+                },{
+                    extend:    'pdf',
+                    text:      '<i class="fa fa-file-pdf"></i>',
+                    titleAttr: 'PDF',
+                    className: 'btn btn-danger'
+                },{
+                    extend:    'print',
+                    text:      '<i class="fa fa-print"></i>',
+                    titleAttr: 'Print',
+                    className: 'btn btn-warning',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                    messageTop: 'Alarm'
+                },{
+                    extend: 'colvis',
+                    className: 'btn btn-default',
+                    postfixButtons: ['colvisRestore']
+                }],
+                fade: false,
+            language: {
+                buttons: {
+                    colvis: 'Columns'
+                },
+                searchPlaceholder: "Search records",
+                search: ""
+            }
+        });
+    });
+</script>
+
+<%- include(footerPath) %>

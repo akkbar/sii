@@ -1,0 +1,685 @@
+<%- include(headerPath) %>
+<style>
+    .active_machine {background-color: #f7f7f7;}
+    .chart-div {
+      width: 100%; /* Adjust to your layout */
+      height: 300px; /* Explicitly set height */
+    }
+    .machine-list{
+        height: 1500px; /* 90% of the viewport height */
+        overflow-y: auto; /* Enables vertical scrolling if content overflows */
+    }
+</style>
+<script>
+    function getStatusText(elem, status) {
+        switch (status) {
+            case 'Running':
+                elem.className ='badge badge-success'
+                elem.innerHTML ='Running'
+                return
+            case 'Setup':
+                elem.className ='badge badge-warning'
+                elem.innerHTML ='Setup'
+                return
+            case 'Idle':
+                elem.className ='badge badge-secondary'
+                elem.innerHTML ='Idle'
+                return
+            case 'Downtime':
+                elem.className ='badge badge-danger'
+                elem.innerHTML ='Downtime'
+                return
+            default:
+                elem.className ='badge badge-secondary'
+                elem.innerHTML ='Unknow'
+                return
+        }
+    }
+    function writePartName(elem, part_name){
+        elem.innerHTML = part_name
+    }
+    var span_value = {
+        util: {},
+        baselineUtil: {},
+        part: {},
+        baselinePart: {},
+    };
+</script>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12 d-flex align-items-center justify-content-between">
+                    <h1 class="m-0">Machine Report</h1>
+                    <div class="d-flex align-items-center">
+                        <select id="range-selector" class="form-control mr-2">
+                            <option value="hourly">Hourly</option>
+                            <option value="shiftly">Shiftly</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                        <input type="text" id="start-date" class="form-control mr-2 datepicker" size="35" placeholder="Start Date">
+                        <!-- <input type="text" id="end-date" class="form-control mr-2 datepicker" placeholder="End Date"> -->
+                        <!-- <input type="text" id="start-week" class="form-control mr-2 weekpicker" placeholder="Start Date">
+                        <input type="text" id="end-week" class="form-control mr-2 weekpicker" placeholder="End Date"> -->
+                        <input type="text" id="start-month" class="form-control mr-2 monthpicker" placeholder="Start Date">
+                        <input type="text" id="end-month" class="form-control mr-2 monthpicker" placeholder="End Date">
+                        <select id="shift-selector" class="form-control mr-2">
+                            <option value="all">All Shifts</option>
+                            <option value="shift1">Shift 1</option>
+                            <option value="shift2">Shift 2</option>
+                            <option value="shift3">Shift 3</option>
+                        </select>
+                        <button id="apply-filters" class="btn btn-primary btn-sm">Apply</button>
+                    </div>
+                </div>
+              </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+				<div class="col-lg-3 col-12 machine-list">
+                    <% data.machines.forEach(function(machine) { %>
+                    <div class="callout callout-secondary mb-1 p-2" data-id="<%= machine.id %>">
+                        <div class="row">
+                            <div class="col-12">
+                                <h5><%= machine.mc_name %></h5>
+                                
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 justify-content-between">
+                                <span class="float-left" id="status_<%= machine.id %>"></span>
+                                <span class="float-right" id="part_name_<%= machine.id %>"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 text-center border-right">
+                                <h5 class="description-header mb-0" id="util_<%= machine.id %>"><i class="fa fa-circle-notch fa-spin"></i></h5>
+                                <span class="description-text">Utilization <small id="persenUtil_<%= machine.id %>"></small></span>
+                            </div>
+                            <div class="col-6 text-center">
+                                <h5 class="description-header mb-0" id="part_<%= machine.id %>"><i class="fa fa-circle-notch fa-spin"></i></h5>
+                                <span class="description-text">PARTS <small id="persenPart_<%= machine.id %>"></small></span>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            span_value.util['<%= machine.id %>'] = document.getElementById('util_<%= machine.id %>')
+                            span_value.baselineUtil['<%= machine.id %>'] = document.getElementById('persenUtil_<%= machine.id %>')
+                            span_value.part['<%= machine.id %>'] = document.getElementById('part_<%= machine.id %>')
+                            span_value.baselinePart['<%= machine.id %>'] = document.getElementById('persenPart_<%= machine.id %>')
+                        })
+                    </script>
+                    <% }); %>
+				</div>
+                <div class="col-lg-9 col-12" id="report_page">
+					<div class="card">
+						<div class="card-header" id="reportPage">
+						</div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-3 col-6">
+                                    <div class="description-block border-right">
+                                        <span id="util-persen"></span>
+                                        <h5 class="description-header" id="util-value"></h5>
+                                        <span class="description-text">UTILIZATION</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <div class="description-block border-right">
+                                        <span id="oee-persen"></span>
+                                        <h5 class="description-header" id="oee-value"></h5>
+                                        <span class="description-text">OEE</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 col-6">
+                                    <div class="description-block border-right">
+                                        <span id="ar-persen"></span>
+                                        <h5 class="description-header" id="ar-value"></h5>
+                                        <span class="description-text">AR</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 col-6">
+                                    <div class="description-block border-right">
+                                        <span id="pr-persen"></span>
+                                        <h5 class="description-header" id="pr-value"></h5>
+                                        <span class="description-text">PR</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-2 col-6">
+                                    <div class="description-block">
+                                        <span id="qr-persen"></span>
+                                        <h5 class="description-header" id="qr-value"></h5>
+                                        <span class="description-text">QR</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+						<div class="card-body chart-div" id="utilization-div">
+						</div>
+						<div class="card-body chart-div" id="oee-div">
+						</div>
+						<div class="card-body chart-div" id="time-div">
+						</div>
+						<div class="card-body chart-div" id="ct-div">
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </section>
+</div>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        // const now = new Date();
+        // const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
+        // console.log(lastHour.toLocaleDateString('en-CA'))
+        // console.log(lastHour.toLocaleTimeString('en-GB'))
+        const utilBox = document.getElementById('util-value')
+        const oeeBox = document.getElementById('oee-value')
+        const arBox = document.getElementById('ar-value')
+        const prBox = document.getElementById('pr-value')
+        const qrBox = document.getElementById('qr-value')
+        
+        const persen_utilBox = document.getElementById('util-persen')
+        const persen_oeeBox = document.getElementById('oee-persen')
+        const persen_arBox = document.getElementById('ar-persen')
+        const persen_prBox = document.getElementById('pr-persen')
+        const persen_qrBox = document.getElementById('qr-persen')
+        let machineId, startDate, endDate, shift, selectedRange
+
+
+        $('.datepicker').datepicker({
+            autoclose: true,
+            format : "yyyy-mm-dd",
+            todayHighlight : true
+        });
+        $('.weekpicker').datepicker({
+            autoclose: true,
+            format : "yyyy-mm-dd",
+            todayHighlight : true,
+            daysOfWeekDisabled: [0, 2, 3, 4, 5, 6],
+        });
+        $('.monthpicker').datepicker({
+            autoclose: true,
+            format : "yyyy-mm",
+            minViewMode: 1
+        });
+        const rangeSelector = document.getElementById('range-selector');
+        const startDateInput = document.getElementById('start-date');
+
+        // const endDateInput = document.getElementById('end-date');
+        const shiftSelector = document.getElementById('shift-selector');
+        // const startWeekInput = document.getElementById('start-week');
+        // const endWeekInput = document.getElementById('end-week');
+        const startMonthInput = document.getElementById('start-month');
+        const endMonthInput = document.getElementById('end-month');
+
+        function onDateRangeSelected(start, end, label) {
+            startDate = start.format('YYYY-MM-DD');
+            endDate = end.format('YYYY-MM-DD');
+            var today = moment().format("YYYY-MM-DD");
+            sendReportRequest();
+        }
+
+        $('#start-date').daterangepicker({
+            "showDropdowns": true,
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            "alwaysShowCalendars": true,
+            "startDate": moment(),
+            "endDate": moment()
+        }, onDateRangeSelected);
+
+        shiftSelector.addEventListener('change', function () {
+            const dateRangePicker = $('#start-date').data('daterangepicker');
+            onDateRangeSelected(dateRangePicker.startDate, dateRangePicker.endDate, null);
+        });
+
+        const updateFilters = () => {
+            selectedRange = rangeSelector.value;
+
+            // Reset all controls
+            startDateInput.style.display = 'none';
+            // endDateInput.style.display = 'none';
+            // startWeekInput.style.display = 'none';
+            // endWeekInput.style.display = 'none';
+            startMonthInput.style.display = 'none';
+            endMonthInput.style.display = 'none';
+            shiftSelector.style.display = 'none';
+
+            if (selectedRange === 'hourly' || selectedRange === 'daily') {
+                startDateInput.style.display = 'block';
+                // endDateInput.style.display = 'block';
+            } else if (selectedRange === 'shiftly') {
+                startDateInput.style.display = 'block';
+                // endDateInput.style.display = 'block';
+                shiftSelector.style.display = 'block';
+            } else if (selectedRange === 'weekly') {
+                startDateInput.style.display = 'block';
+                // startWeekInput.style.display = 'block';
+                // endWeekInput.style.display = 'block';
+            } else if (selectedRange === 'monthly') {
+                startMonthInput.style.display = 'block';
+                endMonthInput.style.display = 'block';
+            }
+        };
+
+        // Attach event listener to range selector
+        rangeSelector.addEventListener('change', updateFilters);
+
+        // Initialize with default selection
+        updateFilters()
+        sendReportRequest()
+
+        const callouts = document.querySelectorAll('.callout');
+        callouts.forEach(callout => {
+            callout.addEventListener('click', function() {
+                // Remove active class from all callouts
+                callouts.forEach(c => {
+                    c.classList.remove('callout-success', 'active_machine');
+                    c.classList.add('callout-secondary');
+                });
+
+                // Add active class to the clicked callout
+                this.classList.remove('callout-secondary');
+                this.classList.add('callout-success', 'active_machine');
+
+                // Get data-id of the clicked callout
+                machineId = this.getAttribute('data-id');
+                sendReportRequest()
+            });
+        })
+        const applyFiltersButton = document.getElementById('apply-filters');
+        applyFiltersButton.addEventListener('click', function() {
+            sendReportRequest()
+        });
+
+        function persen(base, value, elem){
+            const pp = base > 0 ? (Number(value) - Number(base)) * 100 / Number(base) : 0
+            if(pp > 0){
+                elem.className = 'description-percentage text-success'
+                elem.innerHTML = `<i class="fas fa-caret-up"></i>${pp.toFixed(2)}% `
+            }else{
+                elem.className = 'description-percentage text-danger'
+                elem.innerHTML = `<i class="fas fa-caret-down"></i>${pp.toFixed(2)}% `
+            }
+        }
+
+        function sendReportRequest(){
+            if(!machineId){
+                const firstCallout = document.querySelector('.callout');
+                machineId = firstCallout.getAttribute('data-id');
+            }
+            startDate = startDate;
+            endDate = endDate;
+            // startWeek = document.getElementById('start-week').value;
+            // endWeek = document.getElementById('end-week').value;
+            startMonth = document.getElementById('start-month').value;
+            endMonth = document.getElementById('end-month').value;
+            shift = document.getElementById('shift-selector').value;
+        
+            axios.get(`/production/chart`, {
+                params: {
+                    machineId: machineId,
+                    startDate: startDate,
+                    endDate: endDate,
+                    // startWeek: startWeek,
+                    // endWeek: endWeek,
+                    startMonth: startMonth,
+                    endMonth: endMonth,
+                    shift: shift,
+                    selectedRange: selectedRange,
+                }
+            })
+            .then(response => {
+                document.getElementById('reportPage').innerHTML = response.data.htmlContent;
+                utilBox.innerHTML = response.data.summary.avgUtilization + '<small>%</small>'
+                oeeBox.innerHTML = response.data.summary.avgOEE + '<small>%</small>'
+                arBox.innerHTML = response.data.summary.avgAR + '<small>%</small>'
+                prBox.innerHTML = response.data.summary.avgPR + '<small>%</small>'
+                qrBox.innerHTML = response.data.summary.avgQR + '<small>%</small>'
+                persen(response.data.summary.baseUtilization, response.data.summary.avgUtilization, persen_utilBox)
+                persen(response.data.summary.baseOEE, response.data.summary.avgOEE, persen_oeeBox)
+                persen(response.data.summary.baseAR, response.data.summary.avgAR, persen_arBox)
+                persen(response.data.summary.basePR, response.data.summary.avgPR, persen_prBox)
+                persen(response.data.summary.baseQR, response.data.summary.avgQR, persen_qrBox)
+                
+
+                const utilizationDom = document.getElementById('utilization-div');
+                if (utilizationDom) {
+                    const utilizationChart = echarts.init(utilizationDom)
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: response.data.utilizationData.dates,
+                        },
+                        yAxis: [
+                            {
+                                type: 'value',
+                                min: 0,
+                                max: 100,
+                                name: 'Utilization (%)',
+                            },
+                            {
+                                type: 'value',
+                                name: response.data.utilizationData.unit,
+                            },
+                        ],
+                        grid: {
+                            top: '15%',
+                            bottom: '10%',
+                            left: '5%',
+                            right: '5%',
+                            containLabel: true,
+                        },
+                        series: [
+                            {
+                                name: 'Utilization',
+                                type: 'line',
+                                data: response.data.utilizationData.values,
+                                smooth: true,
+                            },
+                            {
+                                name: `Baseline`,
+                                type: 'line',
+                                data: Array(response.data.utilizationData.dates.length).fill(response.data.utilizationData.baseline),
+                                lineStyle: {
+                                    type: 'dashed',
+                                },
+                                markLine: {
+                                    data: [
+                                    {
+                                        yAxis: response.data.utilizationData.baseline,
+                                        label: {
+                                            formatter: 'Baseline',
+                                        },
+                                    },
+                                    ],
+                                },
+                            },
+                            {
+                                name: response.data.utilizationData.unit,
+                                type: 'bar',
+                                data: response.data.utilizationData.hours,
+                                yAxisIndex: 1,
+                                barWidth: '30%',
+                            },
+                        ],
+                    };
+                    utilizationChart.setOption(option)
+                }
+
+                const oeeDom = document.getElementById('oee-div');
+                if (oeeDom) {
+                    const oeeChart = echarts.init(oeeDom)
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                        },
+                        legend: {
+                            data: ['AR', 'PR', 'QR', 'OEE'],
+                            orient: 'horizontal',
+                            bottom: 0,
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: response.data.oeeData.dates,
+                        },
+                        yAxis: [
+                            {
+                                type: 'value',
+                                min: 0,
+                                max: null,
+                                name: '%',
+                            },
+                        ],
+                        grid: {
+                            top: '15%',
+                            bottom: '10%',
+                            left: '5%',
+                            right: '5%',
+                            containLabel: true,
+                        },
+                        series: [
+                            {
+                                name: 'Availability Rate',
+                                type: 'bar',
+                                data: response.data.arData.values,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                            {
+                                name: 'Performance Rate',
+                                type: 'bar',
+                                data: response.data.prData.values,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                            {
+                                name: 'Quality Rate',
+                                type: 'bar',
+                                data: response.data.qrData.values,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                            {
+                                name: 'OEE',
+                                type: 'line',
+                                data: response.data.oeeData.values,
+                                smooth: true,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                        ],
+                    };
+                    oeeChart.setOption(option);
+                }
+
+                
+
+                const timeDom = document.getElementById('time-div');
+                if (timeDom) {
+                    const timeChart = echarts.init(timeDom)
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow',
+                            },
+                        },
+                        legend: {
+                            data: ['Idle', 'Operating', 'Setup', 'Downtime'],
+                            orient: 'horizontal',
+                            bottom: 0,
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: response.data.stacking.dates,
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: response.data.utilizationData.unit,
+                        },
+                        grid: {
+                            top: '15%',
+                            bottom: '10%',
+                            left: '5%',
+                            right: '5%',
+                            containLabel: true,
+                        },
+                        series: [
+                            {
+                                name: 'Idle',
+                                type: 'bar',
+                                stack: 'total', // Enables stacking
+                                data: response.data.stacking.idletime,
+                            },
+                            {
+                                name: 'Operating',
+                                type: 'bar',
+                                stack: 'total', // Enables stacking
+                                data: response.data.stacking.runtime,
+                            },
+                            {
+                                name: 'Setup',
+                                type: 'bar',
+                                stack: 'total', // Enables stacking
+                                data: response.data.stacking.setuptime,
+                            },
+                            {
+                                name: 'Downtime',
+                                type: 'bar',
+                                stack: 'total', // Enables stacking
+                                data: response.data.stacking.downtime,
+                            },
+                        ],
+                    };
+                    timeChart.setOption(option)
+                }
+
+                const ctDom = document.getElementById('ct-div');
+                if (ctDom) {
+                    const ctChart = echarts.init(ctDom)
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                        },
+                        legend: {
+                            data: ['Cycletime', 'Count', 'Ideal'],
+                            orient: 'horizontal',
+                            bottom: 0,
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: response.data.oeeData.dates,
+                        },
+                        yAxis: [
+                            {
+                                type: 'value',
+                                min: 0,
+                                max: null,
+                                name: response.data.utilizationData.unit,
+                            },
+                            {
+                                type: 'value',
+                                min: 0,
+                                max: null,
+                                name: 'pcs',
+                                splitLine: {
+                                    show: false,
+                                },
+                            },
+                        ],
+                        grid: {
+                            top: '15%',
+                            bottom: '10%',
+                            left: '5%',
+                            right: '5%',
+                            containLabel: true,
+                        },
+                        series: [
+                            {
+                                name: 'Cycletime',
+                                type: 'line',
+                                data: response.data.product.ct,
+                                yAxisIndex: 0,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                            {
+                                name: 'Count',
+                                type: 'bar',
+                                data: response.data.product.count,
+                                yAxisIndex: 1,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                            {
+                                name: 'Ideal',
+                                type: 'bar',
+                                data: response.data.product.ideal,
+                                yAxisIndex: 1,
+                                emphasis: {
+                                    focus: 'series',
+                                },
+                            },
+                        ],
+                    };
+                    ctChart.setOption(option);
+                }
+            })
+            .catch(error => {
+                console.error('There was an error loading the report:', error)
+            });
+        }
+
+    
+    
+    
+        const socket = io();
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        socket.emit('join-room', 'machine-status-room');
+        socket.emit('join-room', 'dashboard-room');
+        socket.on('machine-status', function(data) {
+            data.forEach(function(machine) {
+                getStatusText(document.getElementById('status_' + machine.machine_id),  machine.state)
+                writePartName(document.getElementById('part_name_' + machine.machine_id),  machine.product_name)
+            });
+        });
+        socket.on('utilization', function(data) {
+            data.utilizationdata.utilization.forEach(function(row) {
+                if (span_value.util[row.id]) {
+                    span_value.util[row.id].innerHTML = row.value + '<small>%</small>';
+                }
+                const baselineObject = data.baseline.utilization.find(baseline => baseline.id === row.id)
+                const baseline = baselineObject ? baselineObject.value : 0
+
+                persen(baseline, row.value, span_value.baselineUtil[row.id])
+            })
+            data.utilizationdata.product.forEach(function(row) {
+                if (span_value.part[row.id]) {
+                    span_value.part[row.id].innerHTML = `${row.product} / ${Number(row.ideal).toFixed(0)}`;
+                }
+                const baselineObject = data.baseline.product.find(baseline => baseline.id === row.id)
+                const baselineCount = baselineObject ? baselineObject.product : 0
+                const baselineIdeal = baselineObject ? Number(baselineObject.ideal) : 0
+
+                const prAct = row.ideal > 0 ? row.product*100 / Number(row.ideal) : 0
+                const prBase = baselineIdeal > 0 ? baselineCount*100 / Number(baselineIdeal) : 0
+
+                persen(prBase, prAct, span_value.baselinePart[row.id])
+
+            })
+        });
+    
+    });
+
+    
+
+    
+</script>
+
+<%- include(footerPath) %>

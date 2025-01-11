@@ -1,0 +1,925 @@
+<%- include(headerPath) %>
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0"> <%- data.widget.display_name %>
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-12">
+                    Layout
+                </div>
+            </div>
+            <div class="row" id="layout_setting">
+            </div>
+            <div class="row">
+                <div class="col-lg-<%- data.widget.collg %>">
+                    <div class="card">
+                        <div class="card-body p-1">
+                            <% let currentRowx = -1; %>
+                            <% data.layout.forEach(col => { %>
+                                <% if (col.row !== currentRowx) { %>
+                                    <% if (currentRowx !== -1) { %>
+                                        </div>
+                                    <% } %>
+                                    <div class="row">
+                                    <% currentRowx = col.row; %>
+                                <% } %>
+                                <div class="<%= col.col_class %>" id="content<%= col.col_id %>" style="border: 1px solid black;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor=''">
+                                    Row<%= currentRowx %> <%= col.col_id %>
+                                </div>
+                            <% }) %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<div class="modal fade" id="add_display">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Layout</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Row Position</label><br>
+                            <select name="row" id="row" class="form-control">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Area Name</label><br>
+                            <input type="text" class="form-control" id="col_name" value=""/>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Grid Size on Large Display</label><br>
+                            <select name="collg" id="collg" class="form-control">
+                                <option value="col-lg-2">2</option>
+                                <option value="col-lg-3">3</option>
+                                <option value="col-lg-4">4</option>
+                                <option value="col-lg-5">5</option>
+                                <option value="col-lg-6">6</option>
+                                <option value="col-lg-7">7</option>
+                                <option value="col-lg-8">8</option>
+                                <option value="col-lg-9">9</option>
+                                <option value="col-lg-10">10</option>
+                                <option value="col-lg-11">11</option>
+                                <option value="col-lg-12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Grid Size on Medium Display</label><br>
+                            <select name="colmd" id="colmd" class="form-control">
+                                <option value="col-md-2">2</option>
+                                <option value="col-md-3">3</option>
+                                <option value="col-md-4">4</option>
+                                <option value="col-md-5">5</option>
+                                <option value="col-md-6">6</option>
+                                <option value="col-md-7">7</option>
+                                <option value="col-md-8">8</option>
+                                <option value="col-md-9">9</option>
+                                <option value="col-md-10">10</option>
+                                <option value="col-md-11">11</option>
+                                <option value="col-md-12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Grid Size on Small Display</label><br>
+                            <select name="colsm" id="colsm" class="form-control">
+                                <option value="col-sm-4">4</option>
+                                <option value="col-sm-5">5</option>
+                                <option value="col-sm-6">6</option>
+                                <option value="col-sm-7">7</option>
+                                <option value="col-sm-8">8</option>
+                                <option value="col-sm-9">9</option>
+                                <option value="col-sm-10">10</option>
+                                <option value="col-sm-11">11</option>
+                                <option value="col-sm-12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Grid Size</label><br>
+                            <select name="col" id="col" class="form-control">
+                                <option value="col-4">4</option>
+                                <option value="col-5">5</option>
+                                <option value="col-6">6</option>
+                                <option value="col-7">7</option>
+                                <option value="col-8">8</option>
+                                <option value="col-9">9</option>
+                                <option value="col-10">10</option>
+                                <option value="col-11">11</option>
+                                <option value="col-12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="add_display_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="add_display_exe()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit_display">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Layout Detail</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Row Position</label><br>
+                                    <select name="row" id="edit_row" class="form-control">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Area Name</label><br>
+                                    <input type="text" class="form-control" id="edit_col_name" value=""/>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Grid Size on Large Display</label><br>
+                                    <select name="collg" id="edit_collg" class="form-control">
+                                        <option value="col-lg-2">2</option>
+                                        <option value="col-lg-3">3</option>
+                                        <option value="col-lg-4">4</option>
+                                        <option value="col-lg-5">5</option>
+                                        <option value="col-lg-6">6</option>
+                                        <option value="col-lg-7">7</option>
+                                        <option value="col-lg-8">8</option>
+                                        <option value="col-lg-9">9</option>
+                                        <option value="col-lg-10">10</option>
+                                        <option value="col-lg-11">11</option>
+                                        <option value="col-lg-12">12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Grid Size on Medium Display</label><br>
+                                    <select name="colmd" id="edit_colmd" class="form-control">
+                                        <option value="col-md-2">2</option>
+                                        <option value="col-md-3">3</option>
+                                        <option value="col-md-4">4</option>
+                                        <option value="col-md-5">5</option>
+                                        <option value="col-md-6">6</option>
+                                        <option value="col-md-7">7</option>
+                                        <option value="col-md-8">8</option>
+                                        <option value="col-md-9">9</option>
+                                        <option value="col-md-10">10</option>
+                                        <option value="col-md-11">11</option>
+                                        <option value="col-md-12">12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Grid Size on Small Display</label><br>
+                                    <select name="colsm" id="edit_colsm" class="form-control">
+                                        <option value="col-sm-4">4</option>
+                                        <option value="col-sm-5">5</option>
+                                        <option value="col-sm-6">6</option>
+                                        <option value="col-sm-7">7</option>
+                                        <option value="col-sm-8">8</option>
+                                        <option value="col-sm-9">9</option>
+                                        <option value="col-sm-10">10</option>
+                                        <option value="col-sm-11">11</option>
+                                        <option value="col-sm-12">12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Grid Size</label><br>
+                                    <select name="col" id="edit_col" class="form-control">
+                                        <option value="col-4">4</option>
+                                        <option value="col-5">5</option>
+                                        <option value="col-6">6</option>
+                                        <option value="col-7">7</option>
+                                        <option value="col-8">8</option>
+                                        <option value="col-9">9</option>
+                                        <option value="col-10">10</option>
+                                        <option value="col-11">11</option>
+                                        <option value="col-12">12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12 justify-content-between">
+                                <button type="button" class="btn btn-danger" onclick="delete_modal()"><i class="fa fa-trash-alt"></i></button>
+                                <button type="button" class="btn btn-primary float-right" onclick="edit_display_exe()"><i class="fa fa-save"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Tag List</label><br>
+                                    <select id="tags" name="tags" class="sel2 form-control" style="width:100%">
+                                        <% if (data.tags.length === 0) { %>
+                                            <option value="">No tag available</option>
+                                        <% } else { %>
+                                            <% data.tags.forEach(function(tag) { %>
+                                                <option value="<%= tag.tag_mc %>" data-tipe="<%= tag.tag_type %>"><%= tag.tag_name %></option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Display Mode</label><br>
+                                    <select id="display_mode" name="display_mode" class="sel2 form-control" style="width:100%">
+                                        
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12 text-center">
+                                <canvas id="gauge-canvas" width="400" height="400" style="display:none;"></canvas>
+                                <div id="chart-container" style="width: 600px; height: 400px; margin-top: 20px;"></div>
+                                <button type="button" class="btn btn-success" onclick="set_content()">Set Content</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span class="text-red" id="edit_display_warning"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default float-left" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/plugins/select2/js/select2.min.js"></script>
+
+<script type="text/javascript">
+    var editId;
+    var useId;
+    var layoutArray = []
+    function getArray(){
+        layoutArray = []
+        $('.col-container').each(function() {
+            $(this).find('.row').each(function(index) {
+                $(this).find('.col-member').each(function() {
+                    let colClass = $(this).attr('class').replace('col-member', '').trim()
+                    let colId = $(this).attr('id')
+                    if (colClass && colId) {
+                        layoutArray.push({ row: index,col_class: colClass, col_id: colId });
+                    }
+                });
+            });
+        });
+        console.log(layoutArray);
+    }
+    load_layout()
+    function load_layout(){
+        $('#layout_setting').load(`/machine/singleWidget`, function(response, status, xhr) {
+            if (status === "error") {
+                console.error("Error loading the content:", xhr.status, xhr.statusText);
+            } else {
+                console.log("Content loaded successfully");
+                initializeChartsAndGauges();
+            }
+        });
+    }
+    $(document).ready(function() {
+        $(document).on('click', '.col-member', function() {
+            getArray();
+            editId = $(this).attr('id');
+            useId = $(this).attr('data-id');
+            $('#edit_display').modal('show');
+            axios.post('/machine/detailLayout', { editId: editId })
+                .then((response) => {
+                    if (response.status === 201) {
+                        $('#edit_col_name').val(response.data.layout.col_id);
+                        setSelectorsFromClassString(response.data.layout.col_class)
+                        $('#edit_display_warning').html('');
+                        let maxRow = 0;
+                        layoutArray.forEach(col => {
+                            if (col.row > maxRow) {
+                                maxRow = col.row;
+                            }
+                        });
+                        const selectElement = document.getElementById('edit_row');
+                        selectElement.innerHTML = '';
+                        for (let i = 0; i <= maxRow + 1; i++) {
+                            const option = document.createElement('option');
+                            option.value = i;
+                            if (i === maxRow + 1) {
+                                option.textContent = i + ' (New Row)';
+                            } else {
+                                option.textContent = i;
+                            }
+                            selectElement.appendChild(option);
+                        }
+                        document.getElementById('edit_row').value = response.data.layout.row;
+                    }
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 400) {
+                        $('#edit_display_warning').html(error.response.data);
+                    } else if (error.response && error.response.status === 500) {
+                        $('#edit_display_warning').html(error.response.data);
+                    } else {
+                        $('#edit_display_warning').html(error.message);
+                    }
+                });
+        });
+        function setSelectorsFromClassString(classString) {
+            const classArray = classString.split(' ');
+            classArray.forEach(cls => {
+                if (cls.startsWith('col-lg')) {
+                    document.getElementById('edit_collg').value = cls;
+                } else if (cls.startsWith('col-md')) {
+                    document.getElementById('edit_colmd').value = cls;
+                } else if (cls.startsWith('col-sm')) {
+                    document.getElementById('edit_colsm').value = cls;
+                } else if (cls.startsWith('col-')) {
+                    document.getElementById('edit_col').value = cls;
+                }
+            });
+        }
+        $(document).on('click', '#add-row', function() {
+            $('#add_display').modal('show');
+            getArray();
+            let maxRow = 0;
+            layoutArray.forEach(col => {
+                if (col.row > maxRow) {
+                    maxRow = col.row;
+                }
+            });
+            const selectElement = document.getElementById('row');
+            selectElement.innerHTML = '';
+            for (let i = 0; i <= maxRow + 1; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                if (i === maxRow + 1) {
+                    option.textContent = i + ' (New Row)';
+                } else {
+                    option.textContent = i;
+                }
+                selectElement.appendChild(option);
+            }
+        });
+        const tagsSelect = document.getElementById('tags');
+        tagsSelect.addEventListener('change', function() {
+            updateNextOptions();
+        });
+        
+        updateNextOptions();
+
+        const chartTypeSelect = document.getElementById('display_mode');
+        chartTypeSelect.addEventListener('change', function() {
+            showChartOptions()
+        })
+        showChartOptions()
+
+    });
+    function updateNextOptions() {
+        const selectedOption = document.getElementById('tags').options[document.getElementById('tags').selectedIndex];
+        const dataTipe = selectedOption.getAttribute('data-tipe');
+
+        const nextSelect = document.getElementById('display_mode');
+
+        nextSelect.innerHTML = '';
+
+        if (dataTipe === '2') {
+            nextSelect.innerHTML = `
+                <option value="1">Text</option>
+            `;
+        } else if (dataTipe === '1') {
+            nextSelect.innerHTML = `
+                <option value="1">Text</option>
+                <option value="2">Trend Line Chart</option>
+                <option value="3">Progress Gauge</option>
+                <option value="4">Gauge With Area</option>
+                <option value="5">Progress bar (V)</option>
+                <option value="6">Progress bar (H)</option>
+            `;
+        } else {
+            nextSelect.innerHTML = `<option value="">Please select a valid option</option>`;
+        }
+    }
+    function showChartOptions() {
+        const chartTypeSelect = document.getElementById('display_mode');
+        const gaugeCanvas = document.getElementById('gauge-canvas');
+        const chartContainer = document.getElementById('chart-container');
+        let chartInstance = echarts.init(chartContainer);
+
+        const selectedValue = chartTypeSelect.value;
+        gaugeCanvas.style.display = 'none';
+        chartInstance.clear(); // Clear the chart before drawing a new one
+
+        switch (selectedValue) {
+            case "2":
+                renderTrendLineChart();
+                break;
+            case "3":
+                renderProgressGauge();
+                break;
+            case "4":
+                renderGaugeWithArea();
+                break;
+            case "5":
+                renderVerticalProgressBar();
+                break;
+            case "6":
+                renderHorizontalProgressBar();
+                break;
+            default:
+                chartInstance.clear(); // If no valid option, clear the chart
+                break;
+        }
+        function renderTrendLineChart() {
+            gaugeCanvas.style.display = 'none';
+            const option = {
+                title: {
+                    text: 'Trend Line Chart'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        data: [150, 230, 224, 218, 135, 147, 260],
+                        type: 'line'
+                    }
+                ]
+            };
+            chartInstance.setOption(option);
+        }
+
+        function renderProgressGauge() {
+            gaugeCanvas.style.display = 'block';
+            chartContainer.style.display = 'none';
+            new RadialGauge({
+                renderTo: 'gauge-canvas',
+                width: 400,
+                height: 400,
+                units: "Completion",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: [
+                    "0", "20", "40", "60", "80", "100"
+                ],
+                minorTicks: 2,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 20, "color": "rgba(0,0, 255, .3)" },
+                    { "from": 20, "to": 60, "color": "rgba(0, 255, 0, .3)" },
+                    { "from": 60, "to": 100, "color": "rgba(255, 0, 0, .3)" }
+                ],
+                colorPlate: "#fff",
+                borderShadowWidth: 0,
+                borders: false,
+                colorMajorTicks: "#000",
+                colorMinorTicks: "#000",
+                colorNumbers: "#000",
+                valueBox: true,
+                valueTextShadow: false,
+                colorValueBoxBackground: "#fff",
+                colorValueBoxRect: "#fff",
+                colorValueBoxRectEnd: "#fff",
+                value: 70
+            }).draw();
+        }
+
+        function renderGaugeWithArea() {
+            gaugeCanvas.style.display = 'block';
+            chartContainer.style.display = 'none';
+            new RadialGauge({
+                renderTo: 'gauge-canvas',
+                width: 400,
+                height: 400,
+                units: "Performance",
+                minValue: 0,
+                maxValue: 100,
+                highlights: [
+                    { "from": 0, "to": 30, "color": "#67e0e3" },
+                    { "from": 30, "to": 70, "color": "#37a2da" },
+                    { "from": 70, "to": 100, "color": "#fd666d" }
+                ],
+                borderShadowWidth: 0,
+                borders: false,
+                value: 50
+            }).draw();
+        }
+
+        function renderVerticalProgressBar() {
+            gaugeCanvas.style.display = 'block';
+            chartContainer.style.display = 'none';
+            new LinearGauge({
+                renderTo: 'gauge-canvas',
+                width: 120,
+                height: 400,
+                units: "Vertical Progress",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: ["0", "20", "40", "60", "80", "100"],
+                minorTicks: 4,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 50, "color": "rgba(0, 255, 0, .15)" },
+                    { "from": 50, "to": 100, "color": "rgba(255, 0, 0, .25)" }
+                ],
+                colorPlate: "#fff",
+                borderShadowWidth: 0,
+                borders: false,
+                needleType: "arrow",
+                needleWidth: 2,
+                animationDuration: 1500,
+                animationRule: "linear",
+                tickSide: "left",
+                numberSide: "left",
+                needleSide: "left",
+                barStrokeWidth: 2,
+                barBeginCircle: false,
+                value: 80
+            }).draw();
+        }
+
+        function renderHorizontalProgressBar() {
+            gaugeCanvas.style.display = 'block';
+            chartContainer.style.display = 'none';
+            new LinearGauge({
+                renderTo: 'gauge-canvas',
+                width: 400,
+                height: 120,
+                units: "Horizontal Progress",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: ["0", "20", "40", "60", "80", "100"],
+                minorTicks: 4,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 50, "color": "rgba(0, 255, 0, .15)" },
+                    { "from": 50, "to": 100, "color": "rgba(255, 0, 0, .25)" }
+                ],
+                colorPlate: "#fff",
+                borderShadowWidth: 0,
+                borders: false,
+                barBeginCircle: false,
+                barStrokeWidth: 2,
+                tickSide: "left",
+                numberSide: "left",
+                needleSide: "left",
+                value: 60
+            }).draw();
+        }
+    }
+
+    function set_content(){
+        // Gather form values
+        const tag = document.getElementById('tags').value;
+        const content = document.getElementById('display_mode').value;
+
+        // Create data object to send
+        const data = {
+            id: useId,
+            tag: tag,
+            content: content
+        };
+        const warningElement = document.getElementById('edit_display_warning');
+        warningElement.textContent = '';
+        // Send data to backend using Axios
+        axios.post('/machine/setLayout', data)
+            .then(response => {
+                if (response.data.success) {
+                    $('#edit_display').modal('hide');
+                    warningElement.textContent = 'Display added successfully';
+                    warningElement.classList.remove('text-red');
+                    warningElement.classList.add('text-success');
+                    load_layout()
+                } else {
+                    warningElement.textContent = 'Error updating display: ' + response.data.message;
+                    warningElement.classList.remove('text-success');
+                    warningElement.classList.add('text-red');
+                }
+            })
+            .catch(error => {
+                warningElement.textContent = 'Error:' + error;
+                warningElement.classList.remove('text-success');
+                warningElement.classList.add('text-red');
+            });
+    }
+    function delete_modal() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delete',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, do it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post('/machine/removeLayout', { id: editId })
+                    .then((response) => {
+                        if (response.status === 201) {
+                            updateLayoutRow()
+                            $('#edit_display').modal('hide');
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        Swal.fire('Error!', error.response.data, 'error');
+                    });
+            }
+        });
+    }
+    function add_display_exe() {
+        // Gather form values
+        const row = document.getElementById('row').value;
+        const colName = document.getElementById('col_name').value;
+        const collg = document.getElementById('collg').value;
+        const colmd = document.getElementById('colmd').value;
+        const colsm = document.getElementById('colsm').value;
+        const col = document.getElementById('col').value;
+
+        // Create data object to send
+        const data = {
+            row: row,
+            colName: colName,
+            collg: collg,
+            colmd: colmd,
+            colsm: colsm,
+            col: col
+        };
+        const warningElement = document.getElementById('add_display_warning');
+        warningElement.textContent = '';
+    
+        axios.post('/machine/addLayout', data)
+            .then(response => {
+                if (response.data.success) {
+                    $('#add_display').modal('hide');
+                    load_layout()
+                    // Display success message
+                    warningElement.textContent = 'Display added successfully';
+                    warningElement.classList.remove('text-red');
+                    warningElement.classList.add('text-success');
+                } else {
+                    // Display error message
+                    warningElement.textContent = 'Error adding display';
+                    warningElement.classList.remove('text-success');
+                    warningElement.classList.add('text-red');
+                }
+            })
+            .catch(error => {
+                warningElement.textContent = error.response.data.message;
+                warningElement.classList.remove('text-success');
+                warningElement.classList.add('text-red');
+            });
+    }
+    function edit_display_exe() {
+        // Gather form values
+        const row = document.getElementById('edit_row').value;
+        const colName = document.getElementById('edit_col_name').value;
+        const collg = document.getElementById('edit_collg').value;
+        const colmd = document.getElementById('edit_colmd').value;
+        const colsm = document.getElementById('edit_colsm').value;
+        const col = document.getElementById('edit_col').value;
+
+        // Create data object to send
+        const data = {
+            id: useId,
+            row: row,
+            colName: colName,
+            collg: collg,
+            colmd: colmd,
+            colsm: colsm,
+            col: col
+        };
+        const warningElement = document.getElementById('edit_display_warning');
+        warningElement.textContent = '';
+        // Send data to backend using Axios
+        axios.post('/machine/editLayout', data)
+            .then(response => {
+                if (response.data.success) {
+                    $('#edit_display').modal('hide');
+                    warningElement.textContent = 'Display added successfully';
+                    warningElement.classList.remove('text-red');
+                    warningElement.classList.add('text-success');
+                    updateLayoutRow()
+                    load_layout()
+                } else {
+                    warningElement.textContent = 'Error updating display: ' + response.data.message;
+                    warningElement.classList.remove('text-success');
+                    warningElement.classList.add('text-red');
+                }
+            })
+            .catch(error => {
+                warningElement.textContent = 'Error:' + error;
+                warningElement.classList.remove('text-success');
+                warningElement.classList.add('text-red');
+            });
+    }
+
+    function updateLayoutRow(){
+        getArray()
+        axios.post('/machine/refreshLayoutRow', { layoutArray })
+        .then(response => {
+            if (response.data.success) {
+                console.log('Layout updated successfully');
+                load_layout()
+                getArray()
+            } else {
+                console.error('Error updating layout:', response.data.message);
+                alert('Error updating layout: ' + response.data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating layout');
+        });
+    }
+	function initializeChartsAndGauges(){
+        // Iterate over all elements that should contain a line chart or gauge
+        document.querySelectorAll('[id^="line-chart-"]').forEach(function(chartElement) {
+            const chartId = chartElement.getAttribute('id');
+            chartElement.style.width = chartElement.parentElement.offsetWidth + 'px';
+            chartElement.style.height = chartElement.parentElement.offsetWidth * 0.5 + 'px';
+            console.log(chartElement.style.width)
+            console.log(chartElement.style.height)
+            renderLineChart(chartId);
+        });
+
+        document.querySelectorAll('[id^="gauge-canvas-"]').forEach(function(gaugeElement) {
+            const gaugeId = gaugeElement.getAttribute('id');
+            gaugeElement.width = gaugeElement.parentElement.offsetWidth * 0.9;
+            gaugeElement.height = gaugeElement.parentElement.offsetWidth * 0.9;
+            console.log(gaugeId)
+            renderProgressGauge(gaugeId);
+        });
+
+        document.querySelectorAll('[id^="gauge-area-canvas-"]').forEach(function(gaugeElement) {
+            const gaugeId = gaugeElement.getAttribute('id');
+            gaugeElement.width = gaugeElement.parentElement.offsetWidth * 0.9;
+            gaugeElement.height = gaugeElement.parentElement.offsetWidth * 0.9;
+            console.log(gaugeId)
+            renderGaugeWithArea(gaugeId);
+        });
+
+        document.querySelectorAll('[id^="vertical-progress-"]').forEach(function(progressElement) {
+            const progressId = progressElement.getAttribute('id');
+            progressElement.width = 120; // Fixed width for a vertical gauge
+            progressElement.height = progressElement.parentElement.offsetWidth * 0.8;
+            console.log(gaugeId)
+            renderVerticalProgressBar(progressId);
+        });
+
+        document.querySelectorAll('[id^="horizontal-progress-"]').forEach(function(progressElement) {
+            const progressId = progressElement.getAttribute('id');
+            progressElement.width = progressElement.parentElement.offsetWidth * 0.9; // 90% of the parent's width
+            progressElement.height = 120;
+            console.log(gaugeId)
+            renderHorizontalProgressBar(progressId);
+        });
+
+        // Function to render line charts
+        function renderLineChart(containerId) {
+            const chart = echarts.init(document.getElementById(containerId));
+            const option = {
+                title: { text: 'Trend Line Chart' },
+                xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
+                yAxis: { type: 'value' },
+                series: [{ data: [150, 230, 224, 218, 135, 147, 260], type: 'line' }]
+            };
+            chart.setOption(option);
+        }
+
+        // Function to render progress gauges
+        function renderProgressGauge(canvasId) {
+            const progressCanvas = document.getElementById(canvasId);
+            new RadialGauge({
+                renderTo: progressCanvas,
+                width: progressCanvas.width,
+                height: progressCanvas.height,
+                units: "Completion",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: ["0", "20", "40", "60", "80", "100"],
+                minorTicks: 2,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 20, "color": "rgba(0,0,255,.3)" },
+                    { "from": 20, "to": 60, "color": "rgba(0,255,0,.3)" },
+                    { "from": 60, "to": 100, "color": "rgba(255,0,0,.3)" }
+                ],
+                value: 70
+            }).draw();
+        }
+
+        // Function to render gauge with area highlights
+        function renderGaugeWithArea(canvasId) {
+            const progressCanvas = document.getElementById(canvasId);
+            new RadialGauge({
+                renderTo: progressCanvas,
+                width: progressCanvas.width,
+                height: progressCanvas.height,
+                units: "Performance",
+                minValue: 0,
+                maxValue: 100,
+                highlights: [
+                    { "from": 0, "to": 30, "color": "#67e0e3" },
+                    { "from": 30, "to": 70, "color": "#37a2da" },
+                    { "from": 70, "to": 100, "color": "#fd666d" }
+                ],
+                value: 50
+            }).draw();
+        }
+
+        // Function to render vertical progress bars
+        function renderVerticalProgressBar(canvasId) {
+            const progressCanvas = document.getElementById(canvasId);
+            new LinearGauge({
+                renderTo: progressCanvas,
+                width: progressCanvas.width,
+                height: progressCanvas.height,
+                width: 120,
+                height: 400,
+                units: "Vertical Progress",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: ["0", "20", "40", "60", "80", "100"],
+                minorTicks: 4,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 50, "color": "rgba(0, 255, 0, .15)" },
+                    { "from": 50, "to": 100, "color": "rgba(255, 0, 0, .25)" }
+                ],
+                colorPlate: "#fff",
+                value: 80,
+                borderShadowWidth: 0,
+                borders: false,
+                barBeginCircle: false,
+                colorBarProgress: "#00c0ff",
+                colorBar: "#e0e0e0"
+            }).draw();
+        }
+
+        // Function to render horizontal progress bars
+        function renderHorizontalProgressBar(canvasId) {
+            const progressCanvas = document.getElementById(canvasId);
+            new LinearGauge({
+                renderTo: progressCanvas,
+                width: progressCanvas.width,
+                height: progressCanvas.height,
+                units: "Horizontal Progress",
+                minValue: 0,
+                maxValue: 100,
+                majorTicks: ["0", "20", "40", "60", "80", "100"],
+                minorTicks: 4,
+                strokeTicks: true,
+                highlights: [
+                    { "from": 0, "to": 50, "color": "rgba(0, 255, 0, .15)" },
+                    { "from": 50, "to": 100, "color": "rgba(255, 0, 0, .25)" }
+                ],
+                colorPlate: "#fff",
+                value: 60,
+                borderShadowWidth: 0,
+                borders: false,
+                barBeginCircle: false,
+                colorBarProgress: "#00c0ff",
+                colorBar: "#e0e0e0",
+                horizontal: true
+            }).draw();
+        }
+    }
+</script>
+
+<%- include(footerPath) %>
