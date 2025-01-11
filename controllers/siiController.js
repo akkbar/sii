@@ -5,7 +5,7 @@ const moment = require('moment')
 exports.getDashboard = async (req, res) => {
     const header = {pageTitle: 'Dashboard', user: req.session.user}
 
-    const plantId = req.user.plantId;
+    const plantId = req.session.user.plantId;
 
     const openManifest = await siiModel.countOpenManifest(plantId);
     const allManifest = await siiModel.countAllManifest(plantId);
@@ -13,7 +13,7 @@ exports.getDashboard = async (req, res) => {
     const allKanban = await siiModel.countAllKanban(plantId);
 
     // Simulate the `shiroki_auto_remove` logic if needed
-    const x = await autoRemove();
+    const x = await autoRemove(plantId);
 
     // Prepare data for rendering
     const data = {
@@ -23,35 +23,30 @@ exports.getDashboard = async (req, res) => {
         all_kanban: allKanban.count,
         x,
     };
-    res.render('sii/dashboard', {header: header})
+    res.render('sii/dashboard', {header: header, data:data})
 }
 const autoRemove = async (plantId) => {
     try {
-        const fiveDaysAgo = new Date();
-        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-    
-        const tenDaysAgo = new Date();
-        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-    
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const fiveDaysAgo = moment().subtract(5, 'days').format('YYYY-MM-DD HH:mm:ss');
+        const tenDaysAgo = moment().subtract(10, 'days').format('YYYY-MM-DD HH:mm:ss');
+        const threeDaysAgo = moment().subtract(3, 'days').format('YYYY-MM-DD HH:mm:ss');
     
         // Delete manifest older than 5 days
-        await siiModel.deleteManifestOlderThan(fiveDaysAgo.toISOString(), plantId);
+        await siiModel.deleteManifestOlderThan(fiveDaysAgo, plantId);
     
         // Delete scan records older than 10 days
-        await siiModel.deleteScanOlderThan(tenDaysAgo.toISOString(), plantId);
+        await siiModel.deleteScanOlderThan(tenDaysAgo, plantId);
     
         // Update manifest older than 3 days to set `isvalid` = 0
         await siiModel.editManifestOlderThan(
             { isvalid: 0 },
-            threeDaysAgo.toISOString(),
+            threeDaysAgo,
             plantId
         );
   
         return true;
     } catch (error) {
-        console.error('Error in shirokiAutoRemove:', error);
+        console.error('Error in autoRemove:', error);
         throw error;
     }
 };

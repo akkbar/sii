@@ -25,7 +25,8 @@ exports.loginUser = async (req, res) => {
             name: user.fullname,
             username: user.username,
             userrole: user.user_role,
-            sidemenu: ''
+            sidemenu: '',
+            plantId: user.plant_id
         };
         return res.json({ success: true});
 
