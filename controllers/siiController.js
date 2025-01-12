@@ -91,7 +91,7 @@ const autoRemove = async (plantId) => {
 //==========================================================================================================================
 exports.monitorManifest = async (req, res) => {
     try {
-        const plantId = req.user.plantId; // Assuming `plantId` is retrieved from the authenticated user/session
+        const plantId = req.session.user.plantId; // Assuming `plantId` is retrieved from the authenticated user/session
 
         // Fetch manifest data
         const manifestTable = await siiModel.monitorManifest(plantId);
@@ -168,12 +168,6 @@ exports.monitorManifestAjax = async (req, res) => {
 //KANBAN DATA
 //==========================================================================================================================
 //==========================================================================================================================
-
-// function shiroki_master_data(){
-//     $this->global['pageTitle'] = 'Data Kanban';
-//     $this->loadViews("shiroki/shiroki_master_data", $this->global, NULL, NULL);
-// }
-
 exports.dataKanban = async (req, res) => {
     try {
         const header = {pageTitle: 'Data Kanban', user: req.session.user}
@@ -346,7 +340,7 @@ exports.tambahKanban = async (req, res) => {
                 plant_id: req.session.user.plantId,
             };
 
-            const existingData = await siiModel.getKanbanCus(kanban_cus, kanban_sii, req.user.plantId);
+            const existingData = await siiModel.getKanbanCus(kanban_cus, kanban_sii, req.session.user.plantId);
 
             if (existingData) {
                 // Update existing record
@@ -366,6 +360,205 @@ exports.tambahKanban = async (req, res) => {
         res.status(500).send('An error occurred while processing the request.');
     }
 };
+//==========================================================================================================================
+//==========================================================================================================================
+//HALT KEYS
+//==========================================================================================================================
+//==========================================================================================================================
+exports.haltKey = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Admin', user: req.session.user}
+        res.render('sii/haltKey', { header: header });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.haltKeyAjax = async (req, res) => {
+    const filters = {
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'nama',
+        null,
+        'tanggal',
+        null,
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'nama'
+        
+        const data = await siiModel.haltKeyList(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.haltKeyListFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.haltKeyListCountAll(),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = Number(filters.start) + index + 1;
+                const encryptID = encryptModel.encryptOA(record.id)
+                return [
+                    no,
+                    record.nama,
+                    '******',
+                    record.tanggal,
+                    `<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#masterdata${no}" title="Update Data"><i class="fa fa-pencil-alt"></i> Update</button>
+                    <div class="modal fade" id="masterdata${no}">
+                        <div class="modal-dialog">
+                        <form action="/sii/updateAdmin" method="POST">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">Update Admin</h4>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div>
+                                        <table class="table">
+                                            <tr>
+                                                <th>Nama</th>
+                                                <td><input type="text" class="form-control" value="${record.nama}" name="nama" required></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Pass</th>
+                                                <td><input type="password" class="form-control" name="pass" required></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Delete?</th>
+                                                <td><select name="isvalid" class="form-control"><option value="1">No</option><option value="0">Yes</option></select></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="modal-footer justify-content-between">
+                                    <input type="hidden" name="id" value="${encryptID}">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Update</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>`
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/haltKeyAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
+exports.updateAdmin = async (req, res) => {
+    try {
+        const { nama, pass, isvalid, id: encryptedId } = req.body;
+  
+        // Decrypt the admin ID
+        const id = encryptModel.decryptOA(encryptedId); // Replace `decryptOA` with your decryption method
+        if (!id) {
+          return res.status(400).send('Invalid ID.');
+        }
+  
+        // Prepare the data for update
+        const data = {
+            nama,
+            pass,
+            isvalid,
+        };
+  
+        // Update the admin in the database
+        const updated = await siiModel.editAdmin(data, id);
+        if (updated) {
+            return res.redirect('/sii/haltKey'); // Redirect on success
+        } else {
+            return res.status(500).send('Failed to update admin.');
+        }
+    } catch (error) {
+        console.error('Error in updateAdmin:', error.message);
+        return res.status(500).send('An error occurred while updating admin.');
+    }
+}
+
+exports.addAdmin = async (req, res) => {
+    try {
+        const { nama, pass, pass2 } = req.body;
+  
+        // Validate input
+        if (nama && pass && pass === pass2) {
+            const data = {
+                nama,
+                pass,
+                plant_id: req.session.user.plantId,
+            };
+  
+            // Add the admin to the database
+            const insertId = await siiModel.addAdmin(data);
+            if (insertId) {
+                return res.redirect('/sii/haltKey'); // Redirect on success
+            } else {
+                return res.status(500).send('Failed to add admin.');
+            }
+        } else {
+            return res.status(400).send('Input is not valid.');
+        }
+    } catch (error) {
+        console.error('Error in addAdmin:', error.message);
+        return res.status(500).send('An error occurred while adding admin.');
+    }
+}
+
+//==========================================================================================================================
+//==========================================================================================================================
+//HALTED MANIFEST
+//==========================================================================================================================
+//==========================================================================================================================
+// function shiroki_halt(){
+//     $this->global['pageTitle'] = 'Halted Manifest';
+//     $this->loadViews("shiroki/shiroki_halt", $this->global, NULL, NULL);
+// }
+// function shiroki_halt_ajax(){
+//     $list = $this->shiroki_model->halt_dt($this->plant_id);
+//     $data = array();
+//     $no = $_POST['start'];
+//     foreach ($list as $record){
+//         $no++;
+//         $row = array();
+//         $xid = $this->encrypt_model->my_encrypt($record->idx);
+//         $row[] = $no;
+//         $row[] = $record->kode;
+//         $row[] = $record->prog;
+//         $row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$xid.'" class="btn btn-sm btn-primary">Cek Hasil Scan</a>';
+//         $row[] = $record->nama;
+//         $row[] = $record->alasan;
+//         $row[] = $record->tanggal;
+//         $data[] = $row;
+//     }
+//     $output = array(
+//         "draw" => $_POST['draw'],
+//         "recordsTotal" => $this->shiroki_model->halt_count_all($this->plant_id),
+//         "recordsFiltered" => $this->shiroki_model->halt_count_filtered($this->plant_id),
+//         "data" => $data,
+//     );
+//     echo json_encode($output);	
+// }
+
+
 //==========================================================================================================================
 //==========================================================================================================================
 //SAMPAH MANIFEST

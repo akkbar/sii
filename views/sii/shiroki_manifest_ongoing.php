@@ -31,17 +31,103 @@
         min-width: 400px;
     }
 </style>
+<script>
+    function cek_proses(){
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url(); ?>shiroki/shiroki_proses_manifest",
+            cache: false,
+            success: function(point){
+                if(point.val == 100){
+                    $('#ok_tutup').modal('show');
+                }else{
+                    $('#ng_tutup').modal('show');
+                }
+            }
+        });
+    }
+    function submit_tutup(){
+        $.ajax({
+            type: "POST",
+            url: "<?php echo base_url(); ?>shiroki/shiroki_submit_tutup_manifest",
+            data: {
+                nama: $('#nama').val(),
+                pass: $('#pass').val(),
+                alasan: $('#alasan').val()
+            },
+            cache: false,
+            success: function(point){
+                if(point.note == 1){
+                    location.href = '<?php echo base_url(); ?>shiroki_manifest_run';
+                }else{
+                    $('#tutup_note').html(point.note);
+                }
+            }
+        });
+    }
+</script>
 <div class="content-wrapper">
 	<section class="content-header">
 		<div class="content-fluid">
             <div class="row">
                 <div class="col-lg-12 col-md-12 col-xs-12">
                     <h1><i class="fa fa-upload"></i> Manifest <?php echo $manifest; ?> <?php if(!empty($alarm)){echo '<small class="float-right">Alarm: '.$alarm.'</small>';} ?></h1>
-                    <a href="<?php echo base_url(); ?>shiroki_manifest_cancel" class="btn btn-warning float-right"><i class="fa fa-times"></i> Tutup Manifest</a>
+                    <button onclick="cek_proses()" class="btn btn-warning float-right"><i class="fa fa-times"></i> Tutup Manifest</button>
                 </div>
             </div>
         </div>
     </section>
+    <div class="modal fade" id="ok_tutup">
+        <div class="modal-dialog">
+            <div class="modal-content bg-primary">
+                <div class="modal-header">
+                    <h4 class="modal-title">Tutup Manifest</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    Proses Manifest 100%
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <a href="<?php echo base_url(); ?>shiroki_manifest_cancel" class="btn btn-success float-right"><i class="fa fa-times"></i> Tutup Manifest</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ng_tutup">
+        <div class="modal-dialog">
+            <div class="modal-content bg-primary">
+                <div class="modal-header">
+                    <h4 class="modal-title">Tutup Manifest</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <tr>
+                            <td colspan="2">Proses belum 100%</td>
+                        </tr>
+                        <tr>
+                            <td>Nama</td>
+                            <td><input type="text" class="form-control" id="nama" required></td>
+                        </tr>
+                        <tr>
+                            <td>Pass</td>
+                            <td><input type="password" class="form-control" id="pass" required></td>
+                        </tr>
+                        <tr>
+                            <td>Alasan</td>
+                            <td><textarea type="text"rows="3" class="form-control" id="alasan" required></textarea></td>
+                        </tr>
+                    </table>
+                    <span class="text-red" id="tutup_note"></span>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button onclick="submit_tutup()" class="btn btn-success float-right"><i class="fa fa-times"></i> Tutup Manifest</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <section class="content">
 		<div class="content-fluid">
             <div class="row">
@@ -115,12 +201,26 @@
     var salah = 0;
     var enable_cus = 1;
     var enable_shi = 0;
+
+    halt = 0;
+    $('#ng_tutup').on('hidden.bs.modal', function () {
+        console.log('Modal is now hidden');
+        halt = 0;
+    });
+    $('#ng_tutup').on('shown.bs.modal', function () {
+        console.log('Modal is now shown');
+        halt = 1;
+    });
     setInterval(function(){
         if(waiting == 0 && scanpart == 0 && enable_cus == 1){
-            keep_focus();
+            if(halt == 0){
+                keep_focus();
+            }
         }
         if(waiting == 0 && scanpart == 1 && enable_shi == 1){
-            keep_focus2();
+            if(halt == 0){
+                keep_focus2();
+            }
         }
         if(salah == 1){
             $('#scan_salah').focus();

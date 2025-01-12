@@ -170,6 +170,85 @@ class siiModel {
     }
     //====================================================================================================================
 	//====================================================================================================================
+    //ADMIN
+    //====================================================================================================================
+	//====================================================================================================================
+    _haltKeyList(filters, columnSearches) {
+        let query = siiDb('admin_pass')
+            .select('*')
+            .where('plant_id', filters.plantId)
+            .andWhere('isvalid', 1);
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async haltKeyList(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._haltKeyList(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async haltKeyListFiltered(filters, columnSearches) {
+        let query = this._haltKeyList(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async haltKeyListCountAll() {
+        let query = siiDb('admin_pass').where({isvalid: 1})
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+	//====================================================================================================================
+    async addAdmin(data) {
+        const trx = await siiDb.transaction();
+        try {
+            const [insertId] = await trx('admin_pass')
+                .insert(data)
+                .returning('id'); // Returning the inserted ID (works with PostgreSQL/MySQL 8+)
+            await trx.commit();
+            return insertId;
+        } catch (error) {
+            await trx.rollback();
+            console.error('Error in addAdmin:', error.message);
+            throw error;
+        }
+    }
+    async editAdmin(data, id) {
+        try {
+            await siiDb('admin_pass')
+                .where({ id })
+                .update(data);
+            return true;
+        } catch (error) {
+            console.error('Error in editAdmin:', error.message);
+            throw error;
+        }
+    }
+    async getAdmin(nama, pass, plantId) {
+        try {
+            return await siiDb('admin_pass')
+                .select('*')
+                .where({
+                    nama,
+                    pass,
+                    isvalid: 1,
+                    plant_id: plantId,
+                })
+            .first(); // Returns the first matching record or undefined
+        } catch (error) {
+            console.error('Error in getAdmin:', error.message);
+            throw error;
+        }
+    }
+    //====================================================================================================================
+	//====================================================================================================================
     //MANIFEST SAMPAH
     //====================================================================================================================
 	//====================================================================================================================

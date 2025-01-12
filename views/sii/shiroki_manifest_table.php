@@ -26,7 +26,7 @@ th {
     if(!empty($manifest_table)){
         foreach($manifest_table as $row){
 ?>
-<!-- <tr <?php //if($row[9] == 0){echo 'style="background-color:#5cff87"'; $prog++;}elseif($row[9] < $row[6] and $row[9] != 0){echo 'style="background-color:#c7c8c9"';} ?>> -->
+    <!-- <tr <?php //if($row[9] == 0){echo 'style="background-color:#5cff87"'; $prog++;}elseif($row[9] < $row[6] and $row[9] != 0){echo 'style="background-color:#c7c8c9"';} ?>> -->
     <tr <?php if($row[9] == 0){echo 'style="background-color:#5cff87"'; $prog++;}elseif($row[9] < $row[5] and $row[9] != 0){echo 'style="background-color:#c7c8c9"';} ?>>
         <td><?php echo $a; ?></td>
         <td><?php echo $row[0]; ?></td>

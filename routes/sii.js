@@ -17,6 +17,10 @@ router.post('/tambahKanban', isAuthenticated, authorizeRoles('Admin', 'Manager')
 router.post('/cekPartName', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.cekPartName)
 router.post('/updateDataKanban', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.updateDataKanban)
 
+router.get('/haltKey', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.haltKey)
+router.post('/haltKey', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.haltKeyAjax)
+router.post('/addAdmin', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.addAdmin)
+router.post('/updateAdmin', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.updateAdmin)
 
 // router.get('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSet)
 // router.post('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAjax)
