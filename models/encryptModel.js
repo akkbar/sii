@@ -10,7 +10,8 @@ class EncryptModel {
    * @param {string} data - The data to encrypt.
    * @returns {string} - The encrypted string.
    */
-  encryptOA(data) {
+  encryptOA(input) {
+    const data = String(input)
     const iv = crypto.randomBytes(16); // Generate a random initialization vector
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
 
@@ -27,7 +28,8 @@ class EncryptModel {
    * @param {string} data - The encrypted data to decrypt.
    * @returns {string|null} - The decrypted string or null if decryption fails.
    */
-  decryptOA(data) {
+  decryptOA(input) {
+    const data = String(input)
     try {
       // Decode the base64 data and add the '=' back to complete the padding
       const decodedData = Buffer.from(`${data}=`, 'base64').toString('utf8');

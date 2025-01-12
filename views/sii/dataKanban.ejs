@@ -40,7 +40,7 @@
 	</section>
     <div class="modal fade" id="tambahdata">
         <div class="modal-dialog">
-        <form action="<?php echo base_url(); ?>shiroki_tambah_master_data" method="POST">
+        <form action="/sii/tambahKanban" method="POST">
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">Tambah Data Kanban</h4>
@@ -55,8 +55,8 @@
                                 <td><input type="text" class="form-control" name="kanban_cus" onkeyup="cek_part_name(this)" required></td>
                             </tr>
                             <tr>
-                                <th>Kanban Shiroki</th>
-                                <td><input type="text" class="form-control" name="kanban_shi" required></td>
+                                <th>Kanban SII</th>
+                                <td><input type="text" class="form-control" name="kanban_sii" required></td>
                             </tr>
                             <tr>
                                 <th>Deskripsi</th>
@@ -101,22 +101,6 @@
 		</div>
 	</section>
 </div>
-<script src="<?php echo base_url(); ?>assets/adminlte/plugins/select2/js/select2.full.min.js"></script>
-<link rel="stylesheet" href="<?php echo base_url(); ?>assets/plugins/datepicker/datepicker3.css" />
-<script src="<?php echo base_url(); ?>assets/plugins/datepicker/bootstrap-datepicker.js"></script>
-
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables/jquery.dataTables.min.js')?>"></script>
-<link href="<?php echo base_url('assets/adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css')?>" rel="stylesheet">
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js')?>"></script>
-<link href="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css')?>" rel="stylesheet">
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/js/dataTables.buttons.min.js')?>"></script>
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js')?>"></script>
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.html5.min.js')?>"></script>
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.print.min.js')?>"></script>
-<script src="<?php echo base_url('assets/adminlte/plugins/datatables-buttons/js/buttons.colVis.min.js')?>"></script>
-<script src="<?php echo base_url('assets/plugins/DataTables/JSZip-2.5.0/jszip.min.js')?>"></script>
-<script src="<?php echo base_url('assets/plugins/DataTables/pdfmake-0.1.36/pdfmake.min.js')?>"></script>
-<script src="<?php echo base_url('assets/plugins/DataTables/pdfmake-0.1.36/vfs_fonts.js')?>"></script>
 <script type="text/javascript">
 	$(document).ready(function () {
 		$(".sel2").select2({
@@ -131,7 +115,7 @@
             order: [],
             stateSave: true,
             ajax: {
-                url: "<?php echo site_url('shiroki_master_data_ajax')?>",
+                url: "/sii/dataKanban",
                 type: "POST",
                 data: function ( data ) {
                     // data.start_date = $('#start_date').val();
@@ -218,7 +202,7 @@
             var note = row.find('.note');
             $.ajax({
                 type: "POST",
-                url: "<?php echo base_url(); ?>shiroki_cek_part_name",
+                url: "/sii/cekPartName",
                 data: {
                     part_name: $(elem).val()
                 },

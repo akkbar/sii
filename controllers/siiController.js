@@ -177,9 +177,9 @@ exports.monitorManifestAjax = async (req, res) => {
 exports.dataKanban = async (req, res) => {
     try {
         const header = {pageTitle: 'Data Kanban', user: req.session.user}
-        res.render('sii/dataKanban', { header: header, data: data });
+        res.render('sii/dataKanban', { header: header });
     } catch (error) {
-        console.error('Error in sampah:', error);
+        console.error('Error:', error);
         res.status(500).send('Internal Server Error');
     }
 }
@@ -223,7 +223,7 @@ exports.dataKanbanAjax = async (req, res) => {
             recordsTotal: await siiModel.dataKanbanCountAll(),
             recordsFiltered,
             data: data.map((record, index) => {
-                const no = filters.start + index + 1;
+                const no = Number(filters.start) + index + 1;
                 const encryptID = encryptModel.encryptOA(record.id)
                 return [
                     no,
@@ -235,7 +235,7 @@ exports.dataKanbanAjax = async (req, res) => {
                     `<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#masterdata${no}" title="Update Data"><i class="fa fa-pencil-alt"></i> Update</button>
                     <div class="modal fade" id="masterdata${no}">
                         <div class="modal-dialog">
-                        <form action="/sii/update_master_data" method="POST">
+                        <form action="/sii/updateDataKanban" method="POST">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title">Update Master Data</h4>
@@ -251,7 +251,7 @@ exports.dataKanbanAjax = async (req, res) => {
                                             </tr>
                                             <tr>
                                                 <th>Kanban Shiroki</th>
-                                                <td><input type="text" class="form-control" value="${record.kanban_shi}" name="kanban_shi" required></td>
+                                                <td><input type="text" class="form-control" value="${record.kanban_sii}" name="kanban_shi" required></td>
                                             </tr>
                                             <tr>
                                                 <th>Deskripsi</th>
@@ -282,62 +282,90 @@ exports.dataKanbanAjax = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
-// function shiroki_update_master_data(){
-//     $user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-//     if(!empty($user_role)){
-//         if($user_role->role_id == 1 or $user_role->useradmin > 0){
-//             $kanban_cus = $this->input->post('kanban_cus');
-//             $kanban_shi = $this->input->post('kanban_shi');
-//             $desc = $this->input->post('desc');
-//             $isvalid = $this->input->post('isvalid');
-//             $id = $this->encrypt_model->decrypt20($this->input->post('id'));
-//             $array = array(
-//                 'kanban_cus'=>$kanban_cus,
-//                 'kanban_shi'=>$kanban_shi,
-//                 'desc'=>$desc,
-//                 'isvalid'=>$isvalid,
-//                 'addedby'=>$this->user_id,
-//                 'timestamp'=>date('Y-m-d H:i:s')
-//             );
-//             $insert = $this->shiroki_model->edit_master_data($array, $id);
-//             redirect('shiroki_master_data');
-//         }else{
-//             $this->loadThis('Fitur ini hanya dapat diakses admin');
-//         }
-//     }else{
-//         $this->loadThis('Fitur ini hanya dapat diakses admin');
-//     }
-// }
-// function shiroki_tambah_master_data(){
-//     $user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-//     if(!empty($user_role)){
-//         if($user_role->role_id == 1 or $user_role->useradmin > 0){
-//             $kanban_cus = $this->input->post('kanban_cus');
-//             $kanban_shi = $this->input->post('kanban_shi');
-//             $desc = $this->input->post('desc');
-//             if(!empty($kanban_cus) and !empty($kanban_shi)){
-//                 $input_array = array(
-//                     'kanban_cus'=>$kanban_cus,
-//                     'kanban_shi'=>$kanban_shi,
-//                     'desc'=>$desc,
-//                     'addedby'=>$this->user_id,
-//                     'plant_id'=>$this->plant_id
-//                 );
-//                 $cek = $this->shiroki_model->get_kanban_cus($kanban_cus, $kanban_shi, $this->plant_id);
-//                 if(!empty($cek)){
-//                     $update = $this->shiroki_model->edit_master_data($input_array, $cek->id);
-//                 }else{
-//                     $insert = $this->shiroki_model->add_master_data($input_array);
-//                 }
-//             }
-//             redirect('shiroki_master_data');
-//         }else{
-//             $this->loadThis('Fitur ini hanya dapat diakses admin');
-//         }
-//     }else{
-//         $this->loadThis('Fitur ini hanya dapat diakses admin');
-//     }
-// }
+exports.cekPartName = async (req, res) => {
+    try {
+        // Get the `part_name` from the POST request body
+        const { part_name } = req.body;
+    
+        // Fetch the part from the database
+        const part = await siiModel.getManifestByPart(part_name, req.session.user.plantId);
+    
+        if (part) {
+            // Respond with the part name if found
+            res.json(part.part_name);
+        } else {
+            // Respond with an empty string if not found
+            res.json('');
+        }
+    } catch (error) {
+      console.error('Error in cekPartName:', error.message);
+      res.status(500).json({ error: 'An error occurred while fetching the part name.' });
+    }
+};
+exports.updateDataKanban = async (req, res) => {
+    try {
+        // Extract data from the request body
+        const { kanban_cus, kanban_sii, desc, isvalid, id: encryptedId } = req.body;
+        // Decrypt the ID
+        const id = encryptModel.decryptOA(encryptedId); // Replace `decryptOA` with your decryption method
+        if (!id) {
+            return res.status(400).send('Invalid ID.');
+        }
+    
+        // Prepare the data for update
+        const data = {
+            kanban_cus,
+            kanban_sii,
+            desc,
+            isvalid,
+            addedby: req.session.user.id,
+        };
+
+        // Update the record in the database
+        const updated = await siiModel.editMasterData(data, id);
+        if (updated) {
+            return res.redirect('/sii/dataKanban'); // Redirect on success
+        } else {
+            return res.status(500).send('Failed to update master data.');
+        }
+    } catch (error) {
+        console.error('Error in updateMasterData:', error.message);
+        return res.status(500).send('An error occurred while updating master data.');
+    }
+};
+exports.tambahKanban = async (req, res) => {
+    try {
+        const { kanban_cus, kanban_sii, desc } = req.body;
+
+        if (kanban_cus && kanban_sii) {
+            const inputArray = {
+                kanban_cus,
+                kanban_sii,
+                desc: desc || null,
+                addedby: req.session.user.id,
+                plant_id: req.session.user.plantId,
+            };
+
+            const existingData = await siiModel.getKanbanCus(kanban_cus, kanban_sii, req.user.plantId);
+
+            if (existingData) {
+                // Update existing record
+                await siiModel.editMasterData(inputArray, existingData.id);
+            } else {
+                // Insert new record
+                await siiModel.addMasterData(inputArray);
+            }
+
+            // Redirect or send a success response
+            res.redirect('/sii/dataKanban');
+        } else {
+            res.status(400).send('Kanban customer and Kanban SII are required.');
+        }
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).send('An error occurred while processing the request.');
+    }
+};
 //==========================================================================================================================
 //==========================================================================================================================
 //SAMPAH MANIFEST

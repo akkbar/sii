@@ -1,33 +1,7 @@
 <?php if(!defined('BASEPATH')) exit('No direct script access allowed');
 
 class Shiroki_model extends CI_Model{
-	//====================================================================================================================
-	//====================================================================================================================
 	
-	function add_master_data($array){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->trans_start();
-		$this->db2->insert('shiroki_master_shiroki', $array);
-		$insert_id = $this->db2->insert_id();
-		$this->db2->trans_complete();
-		return $insert_id;
-	}
-	function edit_master_data($array, $id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->where('id', $id);
-		$this->db2->update('shiroki_master_shiroki', $array);
-		return TRUE;
-	}
-	public function get_kanban_cus($kanban_cus, $kanban_shi, $plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->from('shiroki_master_shiroki');
-        $this->db2->where('kanban_cus', $kanban_cus);
-        $this->db2->where('kanban_shi', $kanban_shi);
-        $this->db2->where('isvalid', 1);
-        $this->db2->where('plant_id', $plant_id);
-		$return = $this->db2->get();
-		return $return->row();
-	}
 	//====================================================================================================================
 	//====================================================================================================================
 	function add_log($array){
@@ -152,17 +126,7 @@ class Shiroki_model extends CI_Model{
         return $this->db2->count_all_results();
     }
     //====================================================================================================================
-    function get_manifest_bypart($part, $plant_id){
-        $this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->select('*');
-        $this->db2->from('shiroki_manifest_shiroki');
-        $this->db2->where('plant_id', $plant_id);
-        $this->db2->where('part_no', $part);
-        $this->db2->order_by('id', 'desc');
-        $this->db2->limit(1);
-        $return = $this->db2->get();
-		return $return->row();
-    }
+    
     function get_manifest_num($manifest, $plant_id){
         $this->db2 = $this->load->database('codesysdb', TRUE);
         $this->db2->select('*, min(proses) as prog');

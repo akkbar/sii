@@ -57,16 +57,7 @@ class Shiroki extends BaseController{
 		);
         echo json_encode($output);	
 	}
-	function shiroki_cek_part_name(){
-		header("Content-type: text/json");
-		$kode_part = $this->input->post('part_name');
-		$part = $this->shiroki_model->get_manifest_bypart($kode_part, $this->plant_id);
-		if(!empty($part)){
-			echo json_encode($part->part_name);
-		}else{
-			echo json_encode('');
-		}
-	}
+	
 	function shiroki_master_input(){
 		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
 		if(!empty($user_role)){

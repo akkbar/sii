@@ -13,6 +13,10 @@ router.post('/trash_manifest', isAuthenticated, authorizeRoles('Admin', 'Manager
 
 router.get('/dataKanban', isAuthenticated, siiController.dataKanban)
 router.post('/dataKanban', isAuthenticated, siiController.dataKanbanAjax)
+router.post('/tambahKanban', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.tambahKanban)
+router.post('/cekPartName', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.cekPartName)
+router.post('/updateDataKanban', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.updateDataKanban)
+
 
 // router.get('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSet)
 // router.post('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAjax)
