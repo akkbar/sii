@@ -13,7 +13,7 @@ exports.getDashboard = async (req, res) => {
     const allUser = await siiModel.countAllUser(plantId);
     const allKanban = await siiModel.countAllKanban(plantId);
 
-    // Simulate the `shiroki_auto_remove` logic if needed
+    // Simulate the `auto_remove` logic if needed
     const x = await autoRemove(plantId);
 
     // Prepare data for rendering
@@ -167,45 +167,87 @@ exports.monitorManifestAjax = async (req, res) => {
 //LOG SCAN
 //==========================================================================================================================
 //==========================================================================================================================
-// function shiroki_log_data(){
-//     $this->global['pageTitle'] = 'Log Data';
-//     $this->loadViews("shiroki/shiroki_log_data", $this->global, NULL, NULL);
-// }
-// function shiroki_log_data_ajax(){
-//     $list = $this->shiroki_model->get_log_data_dt($this->plant_id);
-//     $data = array();
-//     $no = $_POST['start'];
-//     foreach ($list as $record){
-//         $no++;
-//         $xid = $this->encrypt_model->my_encrypt($record->id);
-//         $row = array();
-//         $row[] = $no;
-//         $row[] = $record->timestamp;
-//         if($record->result == 1){
-//             $row[] = '<span class="badge badge-success">Scan Berhasil</span>';
-//         }elseif($record->result == 2){
-//             $row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
-//         }elseif($record->result == 0 and empty($record->scan_shiroki)){
-//             $row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
-//         }elseif($record->result == 0 and !empty($record->scan_shiroki)){
-//             $row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
-//         }
-//         $row[] = $record->manifest_id;
-//         $row[] = $record->scan_part;
-//         $row[] = $record->scan_shiroki;
-//         $row[] = $record->note;
-//         $row[] = $record->uName;
-//         $row[] = $record->part_name;
-//         $data[] = $row;
-//     }
-//     $output = array(
-//         "draw" => $_POST['draw'],
-//         "recordsTotal" => $this->shiroki_model->log_data_count_all($this->plant_id),
-//         "recordsFiltered" => $this->shiroki_model->log_data_count_filtered($this->plant_id),
-//         "data" => $data,
-//     );
-//     echo json_encode($output);	
-// }
+exports.logScan = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Log Scan', user: req.session.user}
+        res.render('sii/logScan', { header: header });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.logScanAjax = async (req, res) => {
+    const filters = {
+        manifest: req.params.manifest,
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'timestamp',
+        null,
+        'scan_part',
+        'scan_sii',
+        'note',
+        'fullname',
+        'part_name',
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'update_time'
+        
+        const data = await siiModel.logScan(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.logScanFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.logScanCountAll(filters),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = filters.start + index + 1;
+                let resultBadge = '';
+                if (record.result === 1) {
+                    resultBadge = '<span class="badge badge-success">Scan Berhasil</span>';
+                } else if (record.result === 2) {
+                    resultBadge = '<span class="badge badge-warning">Scan Customer OK</span>';
+                } else if (record.result === 0 && !record.scan_sii) {
+                    resultBadge = '<span class="badge badge-danger">Scan Customer Gagal</span>';
+                } else if (record.result === 0 && record.scan_sii) {
+                    resultBadge = '<span class="badge badge-danger">Scan SII Gagal</span>';
+                }
+                return [
+                    no, // Row number
+                    record.timestamp, // Timestamp
+                    resultBadge, // Scan result badge
+                    record.manifest_id, // Scanned part
+                    record.scan_part, // Scanned part
+                    record.scan_sii, // Scanned Sii
+                    record.note, // Note
+                    record.fullname, // Username
+                    record.part_name, // Part name
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
 //==========================================================================================================================
 //==========================================================================================================================
 //KANBAN DATA
@@ -287,8 +329,8 @@ exports.dataKanbanAjax = async (req, res) => {
                                                 <td><input type="text" class="form-control" value="${record.kanban_cus}" onkeyup="cek_part_name(this)" name="kanban_cus" required></td>
                                             </tr>
                                             <tr>
-                                                <th>Kanban Shiroki</th>
-                                                <td><input type="text" class="form-control" value="${record.kanban_sii}" name="kanban_shi" required></td>
+                                                <th>Kanban SII</th>
+                                                <td><input type="text" class="form-control" value="${record.kanban_sii}" name="kanban_sii" required></td>
                                             </tr>
                                             <tr>
                                                 <th>Deskripsi</th>
@@ -897,10 +939,10 @@ exports.logManifestAjax = async (req, res) => {
                     resultBadge = '<span class="badge badge-success">Scan Berhasil</span>';
                 } else if (record.result === 2) {
                     resultBadge = '<span class="badge badge-warning">Scan Customer OK</span>';
-                } else if (record.result === 0 && !record.scan_shiroki) {
+                } else if (record.result === 0 && !record.scan_sii) {
                     resultBadge = '<span class="badge badge-danger">Scan Customer Gagal</span>';
-                } else if (record.result === 0 && record.scan_shiroki) {
-                    resultBadge = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
+                } else if (record.result === 0 && record.scan_sii) {
+                    resultBadge = '<span class="badge badge-danger">Scan SII Gagal</span>';
                 }
                 return [
                     no, // Row number

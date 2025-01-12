@@ -86,17 +86,27 @@ class siiModel {
     //====================================================================================================================
     //====================================================================================================================
     _logScan(filters, columnSearches) {
-        let query = siiDb('master_data as t1')
-            .select('t1.*', 't2.fullname as fullname')
-            .leftJoin('db_main.users as t2', 't1.addedby', 't2.id')
-            .where('t1.plant_id', filters.plantId)
-            .andWhere('t1.isvalid', 1);
+        let query = siiDb('scan_manifest as t1')
+            .select(
+                't1.*',
+                't2.fullname as fullname',
+                't3.part_name as part_name'
+            )
+            .leftJoin('db_main.users as t2', 't1.scanby', 't2.id')
+            .leftJoin(
+                'manifest_data as t3',
+                function () {
+                this.on('t1.manifest_id', '=', 't3.manifest')
+                    .andOn('t1.scan_part', '=', 't3.part_no');
+                }
+            )
+            .where('t1.plant_id', filters.plantId);
         columnSearches.forEach(search => {
             query.where(search.column, 'like', `%${search.value}%`)
         });
         return query
     }
-    async logScanList(filters, orderColumn, orderDirection, columnSearches) {
+    async logScan(filters, orderColumn, orderDirection, columnSearches) {
         let query = this._logScan(filters, columnSearches)
         
         query.orderBy(orderColumn, orderDirection)
@@ -112,8 +122,8 @@ class siiModel {
         const result = await query.count('* as total').first()
         return result ? result.total : 0;
     }
-    async logScanCountAll() {
-        let query = siiDb('master_data').where({isvalid: 1})
+    async logScanCountAll(filters) {
+        let query = siiDb('scan_manifest').where({plant_id: filters.plantId})
         const result = await query.count('* as total').first()
         return result ? result.total : 0;
     }

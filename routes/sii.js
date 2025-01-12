@@ -25,9 +25,10 @@ router.post('/updateAdmin', isAuthenticated, authorizeRoles('Admin', 'Manager'),
 router.get('/manifestHalt', isAuthenticated, siiController.manifestHalt)
 router.post('/manifestHalt', isAuthenticated, siiController.manifestHaltAjax)
 
-
 router.get('/logManifest/:encryptID', isAuthenticated, siiController.logManifest);
 router.post('/logManifest/:manifest', isAuthenticated, siiController.logManifestAjax);
 
+router.get('/logScan', isAuthenticated, siiController.logScan)
+router.post('/logScan', isAuthenticated, siiController.logScanAjax)
 
 module.exports = router;
