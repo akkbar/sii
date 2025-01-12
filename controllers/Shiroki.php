@@ -58,45 +58,45 @@ class Shiroki extends BaseController{
 		$this->load->view('shiroki/shiroki_monitor_scan', $data);
 	}
 	
-	function shiroki_log_data(){
-		$this->global['pageTitle'] = 'Log Data';
-		$this->loadViews("shiroki/shiroki_log_data", $this->global, NULL, NULL);
-	}
-	function shiroki_log_data_ajax(){
-		$list = $this->shiroki_model->get_log_data_dt($this->plant_id);
-		$data = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-			$xid = $this->encrypt_model->my_encrypt($record->id);
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->timestamp;
-			if($record->result == 1){
-				$row[] = '<span class="badge badge-success">Scan Berhasil</span>';
-			}elseif($record->result == 2){
-				$row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
-			}elseif($record->result == 0 and empty($record->scan_shiroki)){
-				$row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
-			}elseif($record->result == 0 and !empty($record->scan_shiroki)){
-				$row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
-			}
-			$row[] = $record->manifest_id;
-			$row[] = $record->scan_part;
-			$row[] = $record->scan_shiroki;
-			$row[] = $record->note;
-			$row[] = $record->uName;
-			$row[] = $record->part_name;
-			$data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->log_data_count_all($this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->log_data_count_filtered($this->plant_id),
-			"data" => $data,
-		);
-        echo json_encode($output);	
-	}
+	// function shiroki_log_data(){
+	// 	$this->global['pageTitle'] = 'Log Data';
+	// 	$this->loadViews("shiroki/shiroki_log_data", $this->global, NULL, NULL);
+	// }
+	// function shiroki_log_data_ajax(){
+	// 	$list = $this->shiroki_model->get_log_data_dt($this->plant_id);
+	// 	$data = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+	// 		$xid = $this->encrypt_model->my_encrypt($record->id);
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->timestamp;
+	// 		if($record->result == 1){
+	// 			$row[] = '<span class="badge badge-success">Scan Berhasil</span>';
+	// 		}elseif($record->result == 2){
+	// 			$row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
+	// 		}elseif($record->result == 0 and empty($record->scan_shiroki)){
+	// 			$row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
+	// 		}elseif($record->result == 0 and !empty($record->scan_shiroki)){
+	// 			$row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
+	// 		}
+	// 		$row[] = $record->manifest_id;
+	// 		$row[] = $record->scan_part;
+	// 		$row[] = $record->scan_shiroki;
+	// 		$row[] = $record->note;
+	// 		$row[] = $record->uName;
+	// 		$row[] = $record->part_name;
+	// 		$data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->log_data_count_all($this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->log_data_count_filtered($this->plant_id),
+	// 		"data" => $data,
+	// 	);
+    //     echo json_encode($output);	
+	// }
 	function shiroki_cek_part_name(){
 		header("Content-type: text/json");
 		$kode_part = $this->input->post('part_name');
@@ -1071,51 +1071,51 @@ class Shiroki extends BaseController{
 		$update = $this->shiroki_model->edit_manifest_5hari($array, date('Y-m-d H:i:s', strtotime('-3 day')), $this->plant_id);
 		return true;
 	}
-	function shiroki_log_manifest($manifest){
-		$get_manifest = $this->shiroki_model->get_manifest_table($this->encrypt_model->decrypt20($manifest), $this->plant_id);
-		if(!empty($get_manifest)){
-			$data['manifest_table'] = $get_manifest;
-			$data['manifest'] = $manifest;
-			$this->global['pageTitle'] = 'Log Data Manifest';
-			$this->loadViews("shiroki/shiroki_manifest_log", $this->global, $data, NULL);
-		}else{
-			$this->loadThis('Manifest tidak ditemukan');
-		}
-	}
-	function shiroki_log_data_byman_ajax($manifest){
-		$manifest = $this->encrypt_model->decrypt20($manifest);
-		$list = $this->shiroki_model->get_log_data_byman_dt($manifest, $this->plant_id);
-		$data = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->timestamp;
-			if($record->result == 1){
-				$row[] = '<span class="badge badge-success">Scan Berhasil</span>';
-			}elseif($record->result == 2){
-				$row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
-			}elseif($record->result == 0 and empty($record->scan_shiroki)){
-				$row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
-			}elseif($record->result == 0 and !empty($record->scan_shiroki)){
-				$row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
-			}
-			$row[] = $record->scan_part;
-			$row[] = $record->scan_shiroki;
-			$row[] = $record->note;
-			$row[] = $record->uName;
-			$row[] = $record->part_name;
-			$data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->log_data_byman_count_all($manifest, $this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->log_data_byman_count_filtered($manifest, $this->plant_id),
-			"data" => $data,
-		);
-        echo json_encode($output);	
-	}
+	// function shiroki_log_manifest($manifest){
+	// 	$get_manifest = $this->shiroki_model->get_manifest_table($this->encrypt_model->decrypt20($manifest), $this->plant_id);
+	// 	if(!empty($get_manifest)){
+	// 		$data['manifest_table'] = $get_manifest;
+	// 		$data['manifest'] = $manifest;
+	// 		$this->global['pageTitle'] = 'Log Data Manifest';
+	// 		$this->loadViews("shiroki/shiroki_manifest_log", $this->global, $data, NULL);
+	// 	}else{
+	// 		$this->loadThis('Manifest tidak ditemukan');
+	// 	}
+	// }
+	// function shiroki_log_data_byman_ajax($manifest){
+	// 	$manifest = $this->encrypt_model->decrypt20($manifest);
+	// 	$list = $this->shiroki_model->get_log_data_byman_dt($manifest, $this->plant_id);
+	// 	$data = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->timestamp;
+	// 		if($record->result == 1){
+	// 			$row[] = '<span class="badge badge-success">Scan Berhasil</span>';
+	// 		}elseif($record->result == 2){
+	// 			$row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
+	// 		}elseif($record->result == 0 and empty($record->scan_shiroki)){
+	// 			$row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
+	// 		}elseif($record->result == 0 and !empty($record->scan_shiroki)){
+	// 			$row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
+	// 		}
+	// 		$row[] = $record->scan_part;
+	// 		$row[] = $record->scan_shiroki;
+	// 		$row[] = $record->note;
+	// 		$row[] = $record->uName;
+	// 		$row[] = $record->part_name;
+	// 		$data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->log_data_byman_count_all($manifest, $this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->log_data_byman_count_filtered($manifest, $this->plant_id),
+	// 		"data" => $data,
+	// 	);
+    //     echo json_encode($output);	
+	// }
 	function shiroki_list_alarm(){
 		$this->global['pageTitle'] = 'Alarm Module';
 		$data['modul'] = $this->shiroki_model->get_alarm_module(1, $this->plant_id);

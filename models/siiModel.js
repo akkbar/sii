@@ -81,6 +81,43 @@ class siiModel {
         return result; // Return the query results
     }
     //====================================================================================================================
+    //====================================================================================================================
+    //LOG SCAN
+    //====================================================================================================================
+    //====================================================================================================================
+    _logScan(filters, columnSearches) {
+        let query = siiDb('master_data as t1')
+            .select('t1.*', 't2.fullname as fullname')
+            .leftJoin('db_main.users as t2', 't1.addedby', 't2.id')
+            .where('t1.plant_id', filters.plantId)
+            .andWhere('t1.isvalid', 1);
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async logScanList(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._logScan(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async logScanFiltered(filters, columnSearches) {
+        let query = this._logScan(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async logScanCountAll() {
+        let query = siiDb('master_data').where({isvalid: 1})
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
 	//====================================================================================================================
     //DATA KANBAN
     //====================================================================================================================
@@ -165,6 +202,60 @@ class siiModel {
             .first(); // Retrieve the first result
         } catch (error) {
             console.error('Error in getManifestByPart:', error.message);
+            throw error;
+        }
+    }
+    //====================================================================================================================
+	//====================================================================================================================
+    //MANIFEST HALT
+    //====================================================================================================================
+	//====================================================================================================================
+    _manifestHalted(filters, columnSearches) {
+        let query = siiDb('manifest_halt as t1')
+            .select('t1.*', siiDb.raw('AVG(t2.proses) as prog'), 't2.id as idx')
+            .join('manifest_data as t2', 't1.kode', 't2.manifest')
+            .where('t2.isvalid', 1)
+            .andWhere('t1.plant_id', filters.plantId)
+            .groupBy('t1.kode');
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async manifestHalted(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._manifestHalted(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async manifestHaltedFiltered(filters, columnSearches) {
+        let query = this._manifestHalted(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async manifestHaltedCountAll(filters) {
+        let query = siiDb('manifest_halt').where('plant_id', filters.plantId)
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+	//====================================================================================================================
+    async addHalt(data) {
+        const trx = await siiDb.transaction(); // Start a transaction
+        try {
+            const [insertId] = await trx('manifest_halt')
+                .insert(data)
+                .returning('id'); // Return the ID of the inserted record (PostgreSQL/MySQL 8+)
+            await trx.commit(); // Commit the transaction
+            return insertId;
+        } catch (error) {
+            await trx.rollback(); // Rollback the transaction in case of error
+            console.error('Error in addHalt:', error.message);
             throw error;
         }
     }
@@ -323,7 +414,126 @@ class siiModel {
             throw error; // Re-throw the error for higher-level handling
         }
     }
+    //====================================================================================================================
+	//====================================================================================================================
+    //GENERAL USE
+    //====================================================================================================================
+	//====================================================================================================================
+    async getManifestTable(manifest, plantId) {
+        try {
+            // Fetch manifest table data with aggregated `sum_kanban`
+            const result = await db('manifest_data')
+                .select(
+                    '*',
+                    db.raw('SUM(qty_kanban) as sum_kanban')
+                )
+                .where('plant_id', plantId)
+                .andWhere('manifest', manifest)
+                .groupBy('manifest', 'part_no');
+        
+            // If no results, return an empty array
+            if (!result || result.length === 0) {
+                return [];
+            }
+    
+            // Process each row and append scan results
+            const processedResults = await Promise.all(
+                result.map(async (row) => {
+                    const good = await this.getResultManifestScan(row.manifest, row.part_no, 1, plantId);
+                    const ng = await this.getResultManifestScan(row.manifest, row.part_no, 0, plantId);
+        
+                    return [
+                        row.order_no,
+                        row.part_no,
+                        row.unique_no,
+                        row.part_name,
+                        row.qty_per_kanban,
+                        row.sum_kanban,
+                        row.qty_per_kanban * row.sum_kanban,
+                        good,
+                        ng,
+                        row.sum_kanban - good,
+                    ];
+                })
+            );
+    
+            return processedResults;
+        } catch (error) {
+            console.error('Error in getManifestTable:', error.message);
+            throw error;
+        }
+    }
+    
+    async getResultManifestScan(manifest, part, result, plantId) {
+        try {
+            // Base query
+            const query = db('manifest_data as t1')
+                .join('scan_manifest as t2', function () {
+                    this.on('t1.manifest', '=', 't2.manifest_id')
+                        .andOn('t1.part_no', '=', 't2.scan_part')
+                        .orOn('t1.part_nox', '=', 't2.scan_part')
+                        .andOn('t2.result', '=', db.raw('?', [result]));
+                })
+                .where('t1.plant_id', plantId)
+                .andWhere('t1.manifest', manifest)
+                .andWhere('t1.part_no', part)
+                .andWhere('t1.isvalid', 1)
+                .andWhereNotNull('t2.scan_part')
+                .groupBy('t2.id');
+    
+          // Execute the query and return the count
+            const results = await query;
+            return results.length;
+        } catch (error) {
+            console.error('Error in getResultManifestScan:', error.message);
+            throw error;
+        }
+    }
+    //====================================================================================================================
+    //log_data_byman
+	//====================================================================================================================
+    _logDataMan(filters, columnSearches) {
+        let query = siiDb('scan_manifest as t1')
+            .select('t1.*', 't2.fullname as fullname', 't3.part_name as part_name')
+            .leftJoin('db_main.users as t2', 't1.scanby', 't2.id')
+            .leftJoin(
+                'manifest_data as t3',
+                function () {
+                    this.on('t1.manifest_id', '=', 't3.manifest')
+                        .andOn('t1.scan_part', '=', 't3.part_no');
+                }
+            )
+            .where('t1.plant_id', filters.plantId)
+            .andWhere('t1.manifest_id', filters.manifest)
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async logDataMan(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._logDataMan(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
 
+        const results = await query
+        return results
+    }
+
+    async logDataManFiltered(filters, columnSearches) {
+        let query = this._logDataMan(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async logDataManCountAll(filters) {
+        let query = siiDb('scan_manifest').where('plant_id', filters.plantId)
+        .andWhere('manifest_id', filters.manifest)
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+	//====================================================================================================================
 }
 
 module.exports = new siiModel();

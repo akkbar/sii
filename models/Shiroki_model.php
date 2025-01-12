@@ -351,37 +351,55 @@ class Shiroki_model extends CI_Model{
         
         return $arr;
     }
-    function get_manifest_table($manifest, $plant_id){
-        $this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->select('*, sum(qty_kanban) as sum_kanban');
-        $this->db2->from('shiroki_manifest_shiroki');
-        $this->db2->where('plant_id', $plant_id);
-        $this->db2->where('manifest', $manifest);
-        $this->db2->group_by('manifest');
-        $this->db2->group_by('part_no');
-        $return = $this->db2->get();
-        $result = $return->result();
-        $array = array();
-        if(!empty($result)){
-            foreach($result as $row){
-                $cek = array();
-                $cek[] = $row->order_no;
-                $cek[] = $row->part_no;
-                $cek[] = $row->unique_no;
-                $cek[] = $row->part_name;
-                $cek[] = $row->qty_per_kanban;
-                $cek[] = $row->sum_kanban;
-                $cek[] = $row->qty_per_kanban*$row->sum_kanban;
-                $good = $this->get_result_manifest_scan($row->manifest, $row->part_no, 1, $row->plant_id);
-                $ng = $this->get_result_manifest_scan($row->manifest, $row->part_no, 0, $row->plant_id);
-                $cek[] = $good;
-                $cek[] = $ng;
-                $cek[] = ($row->sum_kanban)-$good;
-                $array[] = $cek;
-            }
-        }
-        return $array;
-    }
+    // function get_manifest_table($manifest, $plant_id){
+    //     $this->db2 = $this->load->database('codesysdb', TRUE);
+    //     $this->db2->select('*, sum(qty_kanban) as sum_kanban');
+    //     $this->db2->from('shiroki_manifest_shiroki');
+    //     $this->db2->where('plant_id', $plant_id);
+    //     $this->db2->where('manifest', $manifest);
+    //     $this->db2->group_by('manifest');
+    //     $this->db2->group_by('part_no');
+    //     $return = $this->db2->get();
+    //     $result = $return->result();
+    //     $array = array();
+    //     if(!empty($result)){
+    //         foreach($result as $row){
+    //             $cek = array();
+    //             $cek[] = $row->order_no;
+    //             $cek[] = $row->part_no;
+    //             $cek[] = $row->unique_no;
+    //             $cek[] = $row->part_name;
+    //             $cek[] = $row->qty_per_kanban;
+    //             $cek[] = $row->sum_kanban;
+    //             $cek[] = $row->qty_per_kanban*$row->sum_kanban;
+    //             $good = $this->get_result_manifest_scan($row->manifest, $row->part_no, 1, $row->plant_id);
+    //             $ng = $this->get_result_manifest_scan($row->manifest, $row->part_no, 0, $row->plant_id);
+    //             $cek[] = $good;
+    //             $cek[] = $ng;
+    //             $cek[] = ($row->sum_kanban)-$good;
+    //             $array[] = $cek;
+    //         }
+    //     }
+    //     return $array;
+    // }
+    // function get_result_manifest_scan($manifest, $part, $result, $plant_id){
+    //     $this->db2 = $this->load->database('codesysdb', TRUE);
+    //     $this->db2->select('*');
+    //     $this->db2->from('shiroki_manifest_shiroki as t1');
+    //     if($result == 0){
+    //         $this->db2->join('shiroki_scan_manifest as t2', 't1.manifest = t2.manifest_id and t2.result = 0 and (t1.part_no = t2.scan_part or t1.part_nox = t2.scan_part)', 'left');
+    //     }else{
+    //         $this->db2->join('shiroki_scan_manifest as t2', 't1.manifest = t2.manifest_id and t2.result = 1 and (t1.part_no = t2.scan_part or t1.part_nox = t2.scan_part)', 'left');
+    //     }
+    //     $this->db2->where('t1.plant_id', $plant_id);
+    //     $this->db2->where('t1.manifest', $manifest);
+    //     $this->db2->where('t1.part_no', $part);
+    //     $this->db2->where('t1.isvalid', 1);
+    //     $this->db2->where('t2.scan_part is not null');
+    //     $this->db2->group_by('t2.id');
+    //     $return = $this->db2->get();
+	// 	return $return->num_rows();
+    // }
     function get_manifest_proses($manifest, $plant_id){
         $this->db2 = $this->load->database('codesysdb', TRUE);
         $this->db2->select('avg(proses) as avg');
@@ -397,24 +415,6 @@ class Shiroki_model extends CI_Model{
         }else{
             return 0;
         }
-    }
-    function get_result_manifest_scan($manifest, $part, $result, $plant_id){
-        $this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->select('*');
-        $this->db2->from('shiroki_manifest_shiroki as t1');
-        if($result == 0){
-            $this->db2->join('shiroki_scan_manifest as t2', 't1.manifest = t2.manifest_id and t2.result = 0 and (t1.part_no = t2.scan_part or t1.part_nox = t2.scan_part)', 'left');
-        }else{
-            $this->db2->join('shiroki_scan_manifest as t2', 't1.manifest = t2.manifest_id and t2.result = 1 and (t1.part_no = t2.scan_part or t1.part_nox = t2.scan_part)', 'left');
-        }
-        $this->db2->where('t1.plant_id', $plant_id);
-        $this->db2->where('t1.manifest', $manifest);
-        $this->db2->where('t1.part_no', $part);
-        $this->db2->where('t1.isvalid', 1);
-        $this->db2->where('t2.scan_part is not null');
-        $this->db2->group_by('t2.id');
-        $return = $this->db2->get();
-		return $return->num_rows();
     }
     function get_manifest_bydata($manifest, $part_no, $unique_no, $qty_kanban, $multi, $plant_id){
         $this->db2 = $this->load->database('codesysdb', TRUE);
@@ -757,59 +757,59 @@ class Shiroki_model extends CI_Model{
     }
     //====================================================================================================================
 	//====================================================================================================================
-	var $log_data_byman_order = array(null, 't1.timestamp', 't1.result', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
-    var $log_data_byman_search = array('t1.timestamp', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
-	var $log_data_byman_def_order = array('t1.timestamp'=> 'asc');
-	private function _get_log_data_byman_dt($manifest, $plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->select('t1.*, t2.uName as uName, t3.part_name as part_name');
-		$this->db2->from('shiroki_scan_manifest as t1');
-		$this->db2->join('db_tool.users as t2', 't1.scanby = t2.id', 'left');
-		$this->db2->join('shiroki_manifest_shiroki as t3', 't1.manifest_id = t3.manifest and t1.scan_part = t3.part_no', 'left');
-		$this->db2->where('t1.plant_id', $plant_id);
-		$this->db2->where('t1.manifest_id', $manifest);
-        $i = 0;
-        foreach ($this->log_data_byman_search as $item){
-            if($_POST['search']['value']){
-                if($i===0){
-                    $this->db2->group_start();
-                    $this->db2->like($item, $_POST['search']['value']);
-                }
-                else{
-                    $this->db2->or_like($item, $_POST['search']['value']);
-                }
-                if(count($this->log_data_byman_search) - 1 == $i)
-                    $this->db2->group_end();
-            }
-            $i++;
-        }
-        if(isset($_POST['order'])){
-            $this->db2->order_by($this->log_data_byman_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
-        } 
-        else if(isset($this->log_data_byman_def_order)){
-            $order = $this->log_data_byman_def_order;
-            $this->db2->order_by(key($order), $order[key($order)]);
-		}
-    }
-    public function get_log_data_byman_dt($manifest, $plant_id){
-        $this->_get_log_data_byman_dt($manifest, $plant_id);
-        if($_POST['length'] != -1)
-        $this->db2->limit($_POST['length'], $_POST['start']);
-        $query = $this->db2->get();
-        return $query->result();
-    }
-    public function log_data_byman_count_filtered($manifest, $plant_id){
-        $this->_get_log_data_byman_dt($manifest, $plant_id);
-        $query = $this->db2->get();
-        return $query->num_rows();
-    }
-    public function log_data_byman_count_all($manifest, $plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->from('shiroki_scan_manifest');
-        $this->db2->where('plant_id', $plant_id);
-		$this->db2->where('manifest_id', $manifest);
-        return $this->db2->count_all_results();
-    }
+	// var $log_data_byman_order = array(null, 't1.timestamp', 't1.result', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
+    // var $log_data_byman_search = array('t1.timestamp', 't1.scan_part', 't1.scan_shiroki', 't2.uName', 't3.part_name');
+	// var $log_data_byman_def_order = array('t1.timestamp'=> 'asc');
+	// private function _get_log_data_byman_dt($manifest, $plant_id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+	// 	$this->db2->select('t1.*, t2.uName as uName, t3.part_name as part_name');
+	// 	$this->db2->from('shiroki_scan_manifest as t1');
+	// 	$this->db2->join('db_tool.users as t2', 't1.scanby = t2.id', 'left');
+	// 	$this->db2->join('shiroki_manifest_shiroki as t3', 't1.manifest_id = t3.manifest and t1.scan_part = t3.part_no', 'left');
+	// 	$this->db2->where('t1.plant_id', $plant_id);
+	// 	$this->db2->where('t1.manifest_id', $manifest);
+    //     $i = 0;
+    //     foreach ($this->log_data_byman_search as $item){
+    //         if($_POST['search']['value']){
+    //             if($i===0){
+    //                 $this->db2->group_start();
+    //                 $this->db2->like($item, $_POST['search']['value']);
+    //             }
+    //             else{
+    //                 $this->db2->or_like($item, $_POST['search']['value']);
+    //             }
+    //             if(count($this->log_data_byman_search) - 1 == $i)
+    //                 $this->db2->group_end();
+    //         }
+    //         $i++;
+    //     }
+    //     if(isset($_POST['order'])){
+    //         $this->db2->order_by($this->log_data_byman_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+    //     } 
+    //     else if(isset($this->log_data_byman_def_order)){
+    //         $order = $this->log_data_byman_def_order;
+    //         $this->db2->order_by(key($order), $order[key($order)]);
+	// 	}
+    // }
+    // public function get_log_data_byman_dt($manifest, $plant_id){
+    //     $this->_get_log_data_byman_dt($manifest, $plant_id);
+    //     if($_POST['length'] != -1)
+    //     $this->db2->limit($_POST['length'], $_POST['start']);
+    //     $query = $this->db2->get();
+    //     return $query->result();
+    // }
+    // public function log_data_byman_count_filtered($manifest, $plant_id){
+    //     $this->_get_log_data_byman_dt($manifest, $plant_id);
+    //     $query = $this->db2->get();
+    //     return $query->num_rows();
+    // }
+    // public function log_data_byman_count_all($manifest, $plant_id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+    //     $this->db2->from('shiroki_scan_manifest');
+    //     $this->db2->where('plant_id', $plant_id);
+	// 	$this->db2->where('manifest_id', $manifest);
+    //     return $this->db2->count_all_results();
+    // }
     //====================================================================================================================
     function count_open_manifest($plant_id){
         $this->db2 = $this->load->database('codesysdb', TRUE);
@@ -997,81 +997,81 @@ class Shiroki_model extends CI_Model{
     }
     //====================================================================================================================
 	//====================================================================================================================
-	var $admin_order = array(null, 'nama', null, 'tanggal', null);
-    var $admin_search = array('nama');
-	var $admin_def_order = array('nama'=> 'asc');
-	private function _get_admin_dt($plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->select('*');
-		$this->db2->from('shiroki_admin_pass');
-        $this->db2->where('isvalid', 1);
-		$this->db2->where('plant_id', $plant_id);
-        $i = 0;
-        foreach ($this->admin_search as $item){
-            if($_POST['search']['value']){
-                if($i===0){
-                    $this->db2->group_start();
-                    $this->db2->like($item, $_POST['search']['value']);
-                }
-                else{
-                    $this->db2->or_like($item, $_POST['search']['value']);
-                }
-                if(count($this->admin_search) - 1 == $i)
-                    $this->db2->group_end();
-            }
-            $i++;
-        }
-        if(isset($_POST['order'])){
-            $this->db2->order_by($this->admin_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
-        } 
-        else if(isset($this->admin_def_order)){
-            $order = $this->admin_def_order;
-            $this->db2->order_by(key($order), $order[key($order)]);
-		}
-    }
-    public function admin_dt($plant_id){
-        $this->_get_admin_dt($plant_id);
-        if($_POST['length'] != -1)
-        $this->db2->limit($_POST['length'], $_POST['start']);
-        $query = $this->db2->get();
-        return $query->result();
-    }
-    public function admin_count_filtered($plant_id){
-        $this->_get_admin_dt($plant_id);
-        $query = $this->db2->get();
-        return $query->num_rows();
-    }
-    public function admin_count_all($plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->from('shiroki_admin_pass');
-        $this->db2->where('isvalid', 1);
-        $this->db2->where('plant_id', $plant_id);
-        return $this->db2->count_all_results();
-	}
-	function add_admin($array){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->trans_start();
-		$this->db2->insert('shiroki_admin_pass', $array);
-		$insert_id = $this->db2->insert_id();
-		$this->db2->trans_complete();
-		return $insert_id;
-	}
-	function edit_admin($array, $id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-		$this->db2->where('id', $id);
-		$this->db2->update('shiroki_admin_pass', $array);
-		return TRUE;
-	}
-	public function get_admin($nama, $pass, $plant_id){
-		$this->db2 = $this->load->database('codesysdb', TRUE);
-        $this->db2->from('shiroki_admin_pass');
-        $this->db2->where('nama', $nama);
-        $this->db2->where('pass', $pass);
-        $this->db2->where('isvalid', 1);
-        $this->db2->where('plant_id', $plant_id);
-		$return = $this->db2->get();
-		return $return->row();
-	}
+	// var $admin_order = array(null, 'nama', null, 'tanggal', null);
+    // var $admin_search = array('nama');
+	// var $admin_def_order = array('nama'=> 'asc');
+	// private function _get_admin_dt($plant_id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+	// 	$this->db2->select('*');
+	// 	$this->db2->from('shiroki_admin_pass');
+    //     $this->db2->where('isvalid', 1);
+	// 	$this->db2->where('plant_id', $plant_id);
+    //     $i = 0;
+    //     foreach ($this->admin_search as $item){
+    //         if($_POST['search']['value']){
+    //             if($i===0){
+    //                 $this->db2->group_start();
+    //                 $this->db2->like($item, $_POST['search']['value']);
+    //             }
+    //             else{
+    //                 $this->db2->or_like($item, $_POST['search']['value']);
+    //             }
+    //             if(count($this->admin_search) - 1 == $i)
+    //                 $this->db2->group_end();
+    //         }
+    //         $i++;
+    //     }
+    //     if(isset($_POST['order'])){
+    //         $this->db2->order_by($this->admin_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+    //     } 
+    //     else if(isset($this->admin_def_order)){
+    //         $order = $this->admin_def_order;
+    //         $this->db2->order_by(key($order), $order[key($order)]);
+	// 	}
+    // }
+    // public function admin_dt($plant_id){
+    //     $this->_get_admin_dt($plant_id);
+    //     if($_POST['length'] != -1)
+    //     $this->db2->limit($_POST['length'], $_POST['start']);
+    //     $query = $this->db2->get();
+    //     return $query->result();
+    // }
+    // public function admin_count_filtered($plant_id){
+    //     $this->_get_admin_dt($plant_id);
+    //     $query = $this->db2->get();
+    //     return $query->num_rows();
+    // }
+    // public function admin_count_all($plant_id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+    //     $this->db2->from('shiroki_admin_pass');
+    //     $this->db2->where('isvalid', 1);
+    //     $this->db2->where('plant_id', $plant_id);
+    //     return $this->db2->count_all_results();
+	// }
+	// function add_admin($array){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+	// 	$this->db2->trans_start();
+	// 	$this->db2->insert('shiroki_admin_pass', $array);
+	// 	$insert_id = $this->db2->insert_id();
+	// 	$this->db2->trans_complete();
+	// 	return $insert_id;
+	// }
+	// function edit_admin($array, $id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+	// 	$this->db2->where('id', $id);
+	// 	$this->db2->update('shiroki_admin_pass', $array);
+	// 	return TRUE;
+	// }
+	// public function get_admin($nama, $pass, $plant_id){
+	// 	$this->db2 = $this->load->database('codesysdb', TRUE);
+    //     $this->db2->from('shiroki_admin_pass');
+    //     $this->db2->where('nama', $nama);
+    //     $this->db2->where('pass', $pass);
+    //     $this->db2->where('isvalid', 1);
+    //     $this->db2->where('plant_id', $plant_id);
+	// 	$return = $this->db2->get();
+	// 	return $return->row();
+	// }
 	//====================================================================================================================
 	//====================================================================================================================
     //====================================================================================================================

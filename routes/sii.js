@@ -17,16 +17,17 @@ router.post('/tambahKanban', isAuthenticated, authorizeRoles('Admin', 'Manager')
 router.post('/cekPartName', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.cekPartName)
 router.post('/updateDataKanban', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.updateDataKanban)
 
-router.get('/haltKey', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.haltKey)
-router.post('/haltKey', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.haltKeyAjax)
+router.get('/haltKey', isAuthenticated, siiController.haltKey)
+router.post('/haltKey', isAuthenticated, siiController.haltKeyAjax)
 router.post('/addAdmin', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.addAdmin)
 router.post('/updateAdmin', isAuthenticated, authorizeRoles('Admin', 'Manager'), siiController.updateAdmin)
 
-// router.get('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSet)
-// router.post('/shiftSet', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAjax)
-// router.post('/shiftSetAdd', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetAdd)
-// router.post('/shiftSetRead', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetRead)
-// router.post('/shiftSetEdit', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetEdit)
-// router.post('/shiftSetDelete', isAuthenticated, authorizeRoles('Admin', 'Manager'), prodController.shiftSetDelete)
+router.get('/manifestHalt', isAuthenticated, siiController.manifestHalt)
+router.post('/manifestHalt', isAuthenticated, siiController.manifestHaltAjax)
+
+
+router.get('/logManifest/:encryptID', isAuthenticated, siiController.logManifest);
+router.post('/logManifest/:manifest', isAuthenticated, siiController.logManifestAjax);
+
 
 module.exports = router;

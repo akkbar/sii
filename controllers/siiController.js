@@ -162,7 +162,50 @@ exports.monitorManifestAjax = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
-
+//==========================================================================================================================
+//==========================================================================================================================
+//LOG SCAN
+//==========================================================================================================================
+//==========================================================================================================================
+// function shiroki_log_data(){
+//     $this->global['pageTitle'] = 'Log Data';
+//     $this->loadViews("shiroki/shiroki_log_data", $this->global, NULL, NULL);
+// }
+// function shiroki_log_data_ajax(){
+//     $list = $this->shiroki_model->get_log_data_dt($this->plant_id);
+//     $data = array();
+//     $no = $_POST['start'];
+//     foreach ($list as $record){
+//         $no++;
+//         $xid = $this->encrypt_model->my_encrypt($record->id);
+//         $row = array();
+//         $row[] = $no;
+//         $row[] = $record->timestamp;
+//         if($record->result == 1){
+//             $row[] = '<span class="badge badge-success">Scan Berhasil</span>';
+//         }elseif($record->result == 2){
+//             $row[] = '<span class="badge badge-warning">Scan Customer OK</span>';
+//         }elseif($record->result == 0 and empty($record->scan_shiroki)){
+//             $row[] = '<span class="badge badge-danger">Scan Customer Gagal</span>';
+//         }elseif($record->result == 0 and !empty($record->scan_shiroki)){
+//             $row[] = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
+//         }
+//         $row[] = $record->manifest_id;
+//         $row[] = $record->scan_part;
+//         $row[] = $record->scan_shiroki;
+//         $row[] = $record->note;
+//         $row[] = $record->uName;
+//         $row[] = $record->part_name;
+//         $data[] = $row;
+//     }
+//     $output = array(
+//         "draw" => $_POST['draw'],
+//         "recordsTotal" => $this->shiroki_model->log_data_count_all($this->plant_id),
+//         "recordsFiltered" => $this->shiroki_model->log_data_count_filtered($this->plant_id),
+//         "data" => $data,
+//     );
+//     echo json_encode($output);	
+// }
 //==========================================================================================================================
 //==========================================================================================================================
 //KANBAN DATA
@@ -528,36 +571,74 @@ exports.addAdmin = async (req, res) => {
 //HALTED MANIFEST
 //==========================================================================================================================
 //==========================================================================================================================
-// function shiroki_halt(){
-//     $this->global['pageTitle'] = 'Halted Manifest';
-//     $this->loadViews("shiroki/shiroki_halt", $this->global, NULL, NULL);
-// }
-// function shiroki_halt_ajax(){
-//     $list = $this->shiroki_model->halt_dt($this->plant_id);
-//     $data = array();
-//     $no = $_POST['start'];
-//     foreach ($list as $record){
-//         $no++;
-//         $row = array();
-//         $xid = $this->encrypt_model->my_encrypt($record->idx);
-//         $row[] = $no;
-//         $row[] = $record->kode;
-//         $row[] = $record->prog;
-//         $row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$xid.'" class="btn btn-sm btn-primary">Cek Hasil Scan</a>';
-//         $row[] = $record->nama;
-//         $row[] = $record->alasan;
-//         $row[] = $record->tanggal;
-//         $data[] = $row;
-//     }
-//     $output = array(
-//         "draw" => $_POST['draw'],
-//         "recordsTotal" => $this->shiroki_model->halt_count_all($this->plant_id),
-//         "recordsFiltered" => $this->shiroki_model->halt_count_filtered($this->plant_id),
-//         "data" => $data,
-//     );
-//     echo json_encode($output);	
-// }
+exports.manifestHalt = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Halted Manifest', user: req.session.user}
+        res.render('sii/manifestHalt', { header: header });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.manifestHaltAjax = async (req, res) => {
+    const filters = {
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'kode',
+        null,
+        null,
+        'nama',
+        'alasan',
+        null,
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
 
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'nama'
+        
+        const data = await siiModel.manifestHalted(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.manifestHaltedFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.manifestHaltedCountAll(filters),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = Number(filters.start) + index + 1;
+                const encryptID = encryptModel.encryptOA(record.id)
+                return [
+                    no,
+                    record.kode,
+                    record.prog,
+                    `<a href="/sii/logManifest/${encryptID}" class="btn btn-sm btn-primary">Cek Hasil Scan</a>`,
+                    record.nama,
+                    record.alasan,
+                    record.tanggal,
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/manifestHaltAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
 
 //==========================================================================================================================
 //==========================================================================================================================
@@ -731,3 +812,111 @@ exports.trashManifest = async (req, res) => {
         res.status(500).send('An error occurred while processing your request');
     }
 };
+
+
+//==========================================================================================================================
+//==========================================================================================================================
+//GENERAL USAGE
+//==========================================================================================================================
+//==========================================================================================================================
+exports.logManifest = async (req, res) => {
+    try {
+        const { encryptID } = req.params;
+    
+        // Decrypt the ID
+        const manifestID = encryptModel.decryptOA(encryptID); // Replace `decryptOA` with your decryption method
+        if (!manifestID) {
+            return res.status(400).send('Invalid manifest ID');
+        }
+    
+        // Fetch manifest data
+        const manifestData = await siiModel.getManifestTable(manifestID, req.session.user.plantId);
+    
+        if (!manifestData || manifestData.length === 0) {
+            return res.status(404).send('Manifest not found');
+        }
+        const data = {
+            manifest_table: manifestData,
+            manifest: encryptID
+        }
+        // Render the response or send JSON
+        res.render('sii/logManifest', {
+            pageTitle: 'Log Manifest Data',
+            data: data,
+        });
+    } catch (error) {
+        console.error('Error in logManifest:', error.message);
+        res.status(500).send('An error occurred while processing the request');
+    }
+}
+exports.logManifestAjax = async (req, res) => {
+    const filters = {
+        manifest: req.params.manifest,
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'timestamp',
+        null,
+        'scan_part',
+        'scan_sii',
+        'note',
+        'fullname',
+        'part_name',
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'update_time'
+        
+        const data = await siiModel.logDataMan(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.logDataManFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.logDataManCountAll(filters),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = filters.start + index + 1;
+                let resultBadge = '';
+                if (record.result === 1) {
+                    resultBadge = '<span class="badge badge-success">Scan Berhasil</span>';
+                } else if (record.result === 2) {
+                    resultBadge = '<span class="badge badge-warning">Scan Customer OK</span>';
+                } else if (record.result === 0 && !record.scan_shiroki) {
+                    resultBadge = '<span class="badge badge-danger">Scan Customer Gagal</span>';
+                } else if (record.result === 0 && record.scan_shiroki) {
+                    resultBadge = '<span class="badge badge-danger">Scan Shiroki Gagal</span>';
+                }
+                return [
+                    no, // Row number
+                    record.timestamp, // Timestamp
+                    resultBadge, // Scan result badge
+                    record.scan_part, // Scanned part
+                    record.scan_sii, // Scanned Sii
+                    record.note, // Note
+                    record.fullname, // Username
+                    record.part_name, // Part name
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
