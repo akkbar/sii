@@ -164,6 +164,111 @@ exports.monitorManifestAjax = async (req, res) => {
 }
 //==========================================================================================================================
 //==========================================================================================================================
+//LOG MANIFEST
+//==========================================================================================================================
+//==========================================================================================================================
+exports.logDataManifest = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Log Scan', user: req.session.user}
+        res.render('sii/logDataManifest', { header: header });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.logDataManifestAjax = async (req, res) => {
+    const filters = {
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'manifest',
+        'order_no',
+        null,
+        null,
+        'dock_code',
+        null,
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'manifest'
+        
+        const data = await siiModel.logManifestData(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.logManifestDataFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.logManifestDataCountAll(filters),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = Number(filters.start) + index + 1;
+                const encryptManifest = encryptModel.encryptOA(record.manifest); // Encrypt manifest
+                const formattedDate = moment(record.na7.substring(0, record.na7.length - 4)).format('YYYY-MM-DD HH:mm:ss'); // Format date
+                
+                return [
+                    no, // Row number
+                    record.manifest, // Manifest
+                    record.order_no, // Order number
+                    // Progress link
+                    `<a href="/sii/logManifest/${encryptManifest}" class="btn btn-primary btn-sm">
+                    <i class="fa fa-file"></i> ${record.prog.toFixed(2)}%
+                    </a>`,
+                    formattedDate, // Date
+                    record.dock_code, // Dock code
+                    // Trash button with modal
+                    `<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata${no}" title="Buang ke Tempat Sampah">
+                        <i class="fa fa-trash-alt"></i>
+                    </button>
+                    <div class="modal fade" id="masterdata${no}">
+                        <div class="modal-dialog">
+                        <form action="/sii/trash_manifest" method="POST">
+                            <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Buang Manifest</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                Apakah anda yakin ingin memindahkan ke tempat sampah?
+                            </div>
+                            <div class="modal-footer justify-content-between">
+                                <input type="hidden" name="id" value="${encryptManifest}">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-danger">
+                                <i class="fa fa-trash-alt"></i> Buang
+                                </button>
+                            </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>`
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/logDataManifestAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
+//==========================================================================================================================
+//==========================================================================================================================
 //LOG SCAN
 //==========================================================================================================================
 //==========================================================================================================================
@@ -178,7 +283,6 @@ exports.logScan = async (req, res) => {
 }
 exports.logScanAjax = async (req, res) => {
     const filters = {
-        manifest: req.params.manifest,
         plantId: req.session.user.plantId,
         draw: req.body.draw,
         start: req.body.start,
@@ -190,6 +294,7 @@ exports.logScanAjax = async (req, res) => {
         null,
         'timestamp',
         null,
+        'manifest_id',
         'scan_part',
         'scan_sii',
         'note',
@@ -218,7 +323,7 @@ exports.logScanAjax = async (req, res) => {
             recordsTotal: await siiModel.logScanCountAll(filters),
             recordsFiltered,
             data: data.map((record, index) => {
-                const no = filters.start + index + 1;
+                const no = Number(filters.start) + index + 1;
                 let resultBadge = '';
                 if (record.result === 1) {
                     resultBadge = '<span class="badge badge-success">Scan Berhasil</span>';
@@ -739,7 +844,7 @@ exports.sampahAjax = async (req, res) => {
             recordsTotal: await siiModel.sampahListCountAll(),
             recordsFiltered,
             data: data.map((record, index) => {
-                const no = filters.start + index + 1;
+                const no = Number(filters.start) + index + 1;
                 const encryptID = encryptModel.encryptOA(record.id)
                 const encryptManifest = encryptModel.encryptOA(record.manifest)
                 return [
@@ -933,7 +1038,7 @@ exports.logManifestAjax = async (req, res) => {
             recordsTotal: await siiModel.logDataManCountAll(filters),
             recordsFiltered,
             data: data.map((record, index) => {
-                const no = filters.start + index + 1;
+                const no = Number(filters.start) + index + 1;
                 let resultBadge = '';
                 if (record.result === 1) {
                     resultBadge = '<span class="badge badge-success">Scan Berhasil</span>';

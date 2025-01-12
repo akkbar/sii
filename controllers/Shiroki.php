@@ -810,260 +810,260 @@ class Shiroki extends BaseController{
 			echo json_encode($point);
 		}
 	}
-	function shiroki_setting(){
-		$this->global['pageTitle'] = 'User Setting';
-		$this->loadViews("shiroki/shiroki_setting", $this->global, NULL, NULL);
-	}
-	function shiroki_setting_ajax(){
-		$list = $this->shiroki_model->get_user_data_dt($this->plant_id);
-		$data = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-			$xid = $this->encrypt_model->my_encrypt($record->id);
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->uName;
-			$row[] = $record->username;
-			if($record->role_id == 1){
-				$row[] = 'Admin';
-			}elseif($record->role_id == 2){
-				$row[] = 'Operator';
-			}else{
-				$row[] = 'Guest';
-			}
-			$row[] = '<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#userdata'.$no.'" title="Update Data"><i class="fa fa-pencil-alt"></i> Update</button>
-			<div class="modal fade" id="userdata'.$no.'">
-				<div class="modal-dialog">
-				<form action="'.base_url().'shiroki_update_user_data" method="POST">
-					<div class="modal-content">
-						<div class="modal-header">
-							<h4 class="modal-title">Update User Data</h4>
-							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span></button>
-						</div>
-						<div class="modal-body">
-							<div>
-								<table class="table">
-									<tr>
-										<th>User role</th>
-										<td>
-											<select name="role_id" class="form-control sel2">
-												<option value="3">Guest</option>
-												<option value="1">Admin</option>
-												<option value="2">Operator</option>
-											</select>
-										</td>
-									</tr>
-								</table>
-							</div>
-						</div>
-						<div class="modal-footer justify-content-between">
-							<input type="hidden" name="id" value="'.$xid.'">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-							<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Update</button>
-						</div>
-					</div>
-				</form>
-				</div>
-			</div>';
-            $data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->user_data_count_all($this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->user_data_count_filtered($this->plant_id),
-			"data" => $data,
-		);
-        echo json_encode($output);	
-	}
-	function shiroki_update_user_data(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->useradmin > 0){
-				$id = $this->encrypt_model->decrypt20($this->input->post('id'));
-				$role_id = $this->input->post('role_id');
-				$get_user = $this->shiroki_model->get_user_role($id, $this->plant_id);
-				if(!empty($get_user)){
-					if(!empty($get_user->role_id)){
-						$array = array('role_id'=>$role_id);
-						$insert = $this->shiroki_model->edit_user_data($array, $get_user->id);
-						redirect('shiroki_setting');
-					}else{
-						$array = array('role_id'=>$role_id, 'user_id'=>$get_user->id);
-						$insert = $this->shiroki_model->add_user_data($array);
-						redirect('shiroki_setting');
-					}
-				}else{
-					$this->loadThis('Data tidak valid, silakan coba lagi');
-				}
-			}else{
-				$this->loadThis('Hanya Admin yang dapat mengakses fitur ini');
-			}
-		}else{
-			$this->loadThis('Nampaknya anda seorang hacker ?');
-		}
-	}
-	function shiroki_manifest_log_data(){
-		$this->global['pageTitle'] = 'Log Data Manifest';
-		$this->loadViews("shiroki/shiroki_manifest_log_data", $this->global, NULL, NULL);
-	}
-	function shiroki_manifest_log_data_ajax(){
-		$list = $this->shiroki_model->get_manifest_log_data_dt($this->plant_id);
-		$data = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->manifest;
-			$row[] = $record->order_no;
-			$row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$this->encrypt_model->my_encrypt($record->manifest).'" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> '.round($record->prog, 2).'%</a>';
-			$row[] = date('d-m-Y H:i', strtotime(substr($record->na7, 0, -4)));
-			$row[] = $record->dock_code;
-			//if(date('U') > date('U', strtotime(substr($record->na7, 0, -4)))){
-				$row[] = '<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Buang ke Tempat Sampah"><i class="fa fa-trash-alt"></i></button>
-				<div class="modal fade" id="masterdata'.$no.'">
-					<div class="modal-dialog">
-					<form action="'.base_url().'shiroki_trash_manifest" method="POST">
-						<div class="modal-content">
-							<div class="modal-header">
-								<h4 class="modal-title">Buang Manifest</h4>
-								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-								<span aria-hidden="true">&times;</span></button>
-							</div>
-							<div class="modal-body">
-								Apakah anda yakin ingin memindahkan ke tempat sampah ?
-							</div>
-							<div class="modal-footer justify-content-between">
-								<input type="hidden" name="id" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
-							</div>
-						</div>
-					</form>
-					</div>
-				</div>';
-			// }else{
-			// 	$row[] = '';
-			// }
-			$data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->manifest_log_data_count_all($this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->manifest_log_data_count_filtered($this->plant_id),
-			"data" => $data,
-		);
-        echo json_encode($output);	
-	}
-	function shiroki_manifest_bin_data(){
-		$this->global['pageTitle'] = 'Tempat Sampah';
-		$this->loadViews("shiroki/shiroki_manifest_bin_data", $this->global, NULL, NULL);
-	}
-	function shiroki_manifest_bin_data_ajax(){
-		$list = $this->shiroki_model->get_manifest_bin_data_dt($this->plant_id);
-		$data = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->manifest;
-			$row[] = $record->order_no;
-			$row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$this->encrypt_model->my_encrypt($record->manifest).'" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> '.round($record->prog, 2).'%</a>';
-			$row[] = date('d-m-Y H:i', strtotime(substr($record->na7, 0, -4)));
-			$row[] = $record->dock_code;
-			$row[] = '<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdatax'.$no.'" title="Buang Permanent"><i class="fa fa-trash-alt"></i></button>
-			<div class="modal fade" id="masterdatax'.$no.'">
-				<div class="modal-dialog">
-				<form action="'.base_url().'shiroki_trash_manifest" method="POST">
-					<div class="modal-content">
-						<div class="modal-header">
-							<h4 class="modal-title">Buang Manifest secara Permanent</h4>
-							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span></button>
-						</div>
-						<div class="modal-body">
-							Apakah anda yakin ingin menghapus manifest secara permanent ?
-						</div>
-						<div class="modal-footer justify-content-between">
-							<input type="hidden" name="xid" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-							<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
-						</div>
-					</div>
-				</form>
-				</div>
-			</div>
-			<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Kembalikan Manifest"><i class="fa fa-upload"></i></button>
-			<div class="modal fade" id="masterdata'.$no.'">
-				<div class="modal-dialog">
-				<form action="'.base_url().'shiroki_trash_manifest" method="POST">
-					<div class="modal-content">
-						<div class="modal-header">
-							<h4 class="modal-title">Kembalikan Manifest</h4>
-							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span></button>
-						</div>
-						<div class="modal-body">
-							Apakah anda yakin ingin mengembalikan manifest ini ?
-						</div>
-						<div class="modal-footer justify-content-between">
-							<input type="hidden" name="yid" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-							<button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Kembalikan</button>
-						</div>
-					</div>
-				</form>
-				</div>
-			</div>';
-			$data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->manifest_bin_data_count_all($this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->manifest_bin_data_count_filtered($this->plant_id),
-			"data" => $data,
-		);
-        echo json_encode($output);	
-	}
-	function shiroki_trash_manifest(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->useradmin > 0){
-				$id = $this->input->post('id');
-				$yid = $this->input->post('yid');
-				$xid = $this->input->post('xid');
-				$tid = $this->input->post('tid');
-				if(!empty($id)){
-					$array = array('isvalid'=>0);
-					$update = $this->shiroki_model->edit_manifest_byman($array, $this->encrypt_model->decrypt20($id), $this->plant_id);
-					redirect('shiroki_manifest_log_data');
-				}elseif(!empty($yid)){
-					$array = array('isvalid'=>1);
-					$update = $this->shiroki_model->edit_manifest_byman($array, $this->encrypt_model->decrypt20($yid), $this->plant_id);
-					redirect('shiroki_manifest_bin_data');
-				}elseif(!empty($xid)){
-					$update = $this->shiroki_model->delete_manifest_byman($this->encrypt_model->decrypt20($xid), $this->plant_id);
-					redirect('shiroki_manifest_bin_data');
-				}elseif(!empty($tid)){
-					$time = $this->encrypt_model->decrypt20($tid);
-					$valid = date('U') - $time;
-					if($valid < 80000){
-						$update = $this->shiroki_model->delete_manifest_byvalid(0, $this->plant_id);
-						redirect('shiroki_manifest_bin_data');
-					}else{
-						$this->loadThis('Invalid action');
-					}
-				}
-			}else{
-				$this->loadThis('Fitur ini hanya dapat diakses admin');
-			}
-		}else{
-			$this->loadThis('Fitur ini hanya dapat diakses admin');
-		}
-	}
+	// function shiroki_setting(){
+	// 	$this->global['pageTitle'] = 'User Setting';
+	// 	$this->loadViews("shiroki/shiroki_setting", $this->global, NULL, NULL);
+	// }
+	// function shiroki_setting_ajax(){
+	// 	$list = $this->shiroki_model->get_user_data_dt($this->plant_id);
+	// 	$data = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+	// 		$xid = $this->encrypt_model->my_encrypt($record->id);
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->uName;
+	// 		$row[] = $record->username;
+	// 		if($record->role_id == 1){
+	// 			$row[] = 'Admin';
+	// 		}elseif($record->role_id == 2){
+	// 			$row[] = 'Operator';
+	// 		}else{
+	// 			$row[] = 'Guest';
+	// 		}
+	// 		$row[] = '<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#userdata'.$no.'" title="Update Data"><i class="fa fa-pencil-alt"></i> Update</button>
+	// 		<div class="modal fade" id="userdata'.$no.'">
+	// 			<div class="modal-dialog">
+	// 			<form action="'.base_url().'shiroki_update_user_data" method="POST">
+	// 				<div class="modal-content">
+	// 					<div class="modal-header">
+	// 						<h4 class="modal-title">Update User Data</h4>
+	// 						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	// 						<span aria-hidden="true">&times;</span></button>
+	// 					</div>
+	// 					<div class="modal-body">
+	// 						<div>
+	// 							<table class="table">
+	// 								<tr>
+	// 									<th>User role</th>
+	// 									<td>
+	// 										<select name="role_id" class="form-control sel2">
+	// 											<option value="3">Guest</option>
+	// 											<option value="1">Admin</option>
+	// 											<option value="2">Operator</option>
+	// 										</select>
+	// 									</td>
+	// 								</tr>
+	// 							</table>
+	// 						</div>
+	// 					</div>
+	// 					<div class="modal-footer justify-content-between">
+	// 						<input type="hidden" name="id" value="'.$xid.'">
+	// 						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	// 						<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Update</button>
+	// 					</div>
+	// 				</div>
+	// 			</form>
+	// 			</div>
+	// 		</div>';
+    //         $data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->user_data_count_all($this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->user_data_count_filtered($this->plant_id),
+	// 		"data" => $data,
+	// 	);
+    //     echo json_encode($output);	
+	// }
+	// function shiroki_update_user_data(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->useradmin > 0){
+	// 			$id = $this->encrypt_model->decrypt20($this->input->post('id'));
+	// 			$role_id = $this->input->post('role_id');
+	// 			$get_user = $this->shiroki_model->get_user_role($id, $this->plant_id);
+	// 			if(!empty($get_user)){
+	// 				if(!empty($get_user->role_id)){
+	// 					$array = array('role_id'=>$role_id);
+	// 					$insert = $this->shiroki_model->edit_user_data($array, $get_user->id);
+	// 					redirect('shiroki_setting');
+	// 				}else{
+	// 					$array = array('role_id'=>$role_id, 'user_id'=>$get_user->id);
+	// 					$insert = $this->shiroki_model->add_user_data($array);
+	// 					redirect('shiroki_setting');
+	// 				}
+	// 			}else{
+	// 				$this->loadThis('Data tidak valid, silakan coba lagi');
+	// 			}
+	// 		}else{
+	// 			$this->loadThis('Hanya Admin yang dapat mengakses fitur ini');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Nampaknya anda seorang hacker ?');
+	// 	}
+	// }
+	// function shiroki_manifest_log_data(){
+	// 	$this->global['pageTitle'] = 'Log Data Manifest';
+	// 	$this->loadViews("shiroki/shiroki_manifest_log_data", $this->global, NULL, NULL);
+	// }
+	// function shiroki_manifest_log_data_ajax(){
+	// 	$list = $this->shiroki_model->get_manifest_log_data_dt($this->plant_id);
+	// 	$data = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->manifest;
+	// 		$row[] = $record->order_no;
+	// 		$row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$this->encrypt_model->my_encrypt($record->manifest).'" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> '.round($record->prog, 2).'%</a>';
+	// 		$row[] = date('d-m-Y H:i', strtotime(substr($record->na7, 0, -4)));
+	// 		$row[] = $record->dock_code;
+	// 		//if(date('U') > date('U', strtotime(substr($record->na7, 0, -4)))){
+	// 			$row[] = '<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Buang ke Tempat Sampah"><i class="fa fa-trash-alt"></i></button>
+	// 			<div class="modal fade" id="masterdata'.$no.'">
+	// 				<div class="modal-dialog">
+	// 				<form action="'.base_url().'shiroki_trash_manifest" method="POST">
+	// 					<div class="modal-content">
+	// 						<div class="modal-header">
+	// 							<h4 class="modal-title">Buang Manifest</h4>
+	// 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	// 							<span aria-hidden="true">&times;</span></button>
+	// 						</div>
+	// 						<div class="modal-body">
+	// 							Apakah anda yakin ingin memindahkan ke tempat sampah ?
+	// 						</div>
+	// 						<div class="modal-footer justify-content-between">
+	// 							<input type="hidden" name="id" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
+	// 							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	// 							<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
+	// 						</div>
+	// 					</div>
+	// 				</form>
+	// 				</div>
+	// 			</div>';
+	// 		// }else{
+	// 		// 	$row[] = '';
+	// 		// }
+	// 		$data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->manifest_log_data_count_all($this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->manifest_log_data_count_filtered($this->plant_id),
+	// 		"data" => $data,
+	// 	);
+    //     echo json_encode($output);	
+	// }
+	// function shiroki_manifest_bin_data(){
+	// 	$this->global['pageTitle'] = 'Tempat Sampah';
+	// 	$this->loadViews("shiroki/shiroki_manifest_bin_data", $this->global, NULL, NULL);
+	// }
+	// function shiroki_manifest_bin_data_ajax(){
+	// 	$list = $this->shiroki_model->get_manifest_bin_data_dt($this->plant_id);
+	// 	$data = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->manifest;
+	// 		$row[] = $record->order_no;
+	// 		$row[] = '<a href="'.base_url().'shiroki_log_manifest/'.$this->encrypt_model->my_encrypt($record->manifest).'" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> '.round($record->prog, 2).'%</a>';
+	// 		$row[] = date('d-m-Y H:i', strtotime(substr($record->na7, 0, -4)));
+	// 		$row[] = $record->dock_code;
+	// 		$row[] = '<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdatax'.$no.'" title="Buang Permanent"><i class="fa fa-trash-alt"></i></button>
+	// 		<div class="modal fade" id="masterdatax'.$no.'">
+	// 			<div class="modal-dialog">
+	// 			<form action="'.base_url().'shiroki_trash_manifest" method="POST">
+	// 				<div class="modal-content">
+	// 					<div class="modal-header">
+	// 						<h4 class="modal-title">Buang Manifest secara Permanent</h4>
+	// 						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	// 						<span aria-hidden="true">&times;</span></button>
+	// 					</div>
+	// 					<div class="modal-body">
+	// 						Apakah anda yakin ingin menghapus manifest secara permanent ?
+	// 					</div>
+	// 					<div class="modal-footer justify-content-between">
+	// 						<input type="hidden" name="xid" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
+	// 						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	// 						<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
+	// 					</div>
+	// 				</div>
+	// 			</form>
+	// 			</div>
+	// 		</div>
+	// 		<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Kembalikan Manifest"><i class="fa fa-upload"></i></button>
+	// 		<div class="modal fade" id="masterdata'.$no.'">
+	// 			<div class="modal-dialog">
+	// 			<form action="'.base_url().'shiroki_trash_manifest" method="POST">
+	// 				<div class="modal-content">
+	// 					<div class="modal-header">
+	// 						<h4 class="modal-title">Kembalikan Manifest</h4>
+	// 						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	// 						<span aria-hidden="true">&times;</span></button>
+	// 					</div>
+	// 					<div class="modal-body">
+	// 						Apakah anda yakin ingin mengembalikan manifest ini ?
+	// 					</div>
+	// 					<div class="modal-footer justify-content-between">
+	// 						<input type="hidden" name="yid" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
+	// 						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	// 						<button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Kembalikan</button>
+	// 					</div>
+	// 				</div>
+	// 			</form>
+	// 			</div>
+	// 		</div>';
+	// 		$data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->manifest_bin_data_count_all($this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->manifest_bin_data_count_filtered($this->plant_id),
+	// 		"data" => $data,
+	// 	);
+    //     echo json_encode($output);	
+	// }
+	// function shiroki_trash_manifest(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->useradmin > 0){
+	// 			$id = $this->input->post('id');
+	// 			$yid = $this->input->post('yid');
+	// 			$xid = $this->input->post('xid');
+	// 			$tid = $this->input->post('tid');
+	// 			if(!empty($id)){
+	// 				$array = array('isvalid'=>0);
+	// 				$update = $this->shiroki_model->edit_manifest_byman($array, $this->encrypt_model->decrypt20($id), $this->plant_id);
+	// 				redirect('shiroki_manifest_log_data');
+	// 			}elseif(!empty($yid)){
+	// 				$array = array('isvalid'=>1);
+	// 				$update = $this->shiroki_model->edit_manifest_byman($array, $this->encrypt_model->decrypt20($yid), $this->plant_id);
+	// 				redirect('shiroki_manifest_bin_data');
+	// 			}elseif(!empty($xid)){
+	// 				$update = $this->shiroki_model->delete_manifest_byman($this->encrypt_model->decrypt20($xid), $this->plant_id);
+	// 				redirect('shiroki_manifest_bin_data');
+	// 			}elseif(!empty($tid)){
+	// 				$time = $this->encrypt_model->decrypt20($tid);
+	// 				$valid = date('U') - $time;
+	// 				if($valid < 80000){
+	// 					$update = $this->shiroki_model->delete_manifest_byvalid(0, $this->plant_id);
+	// 					redirect('shiroki_manifest_bin_data');
+	// 				}else{
+	// 					$this->loadThis('Invalid action');
+	// 				}
+	// 			}
+	// 		}else{
+	// 			$this->loadThis('Fitur ini hanya dapat diakses admin');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Fitur ini hanya dapat diakses admin');
+	// 	}
+	// }
 	function shiroki_auto_remove(){
 		$update = $this->shiroki_model->delete_manifest_3hari(date('Y-m-d H:i:s', strtotime('-5 day')), $this->plant_id);
 		$update = $this->shiroki_model->delete_scan_7hari(date('Y-m-d H:i:s', strtotime('-10 day')), $this->plant_id);

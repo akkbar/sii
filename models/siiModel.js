@@ -82,6 +82,53 @@ class siiModel {
     }
     //====================================================================================================================
     //====================================================================================================================
+    //LOG MANIFEST DATA
+    //====================================================================================================================
+    //====================================================================================================================
+    _logManifestData(filters, columnSearches) {
+        let query = siiDb('scan_manifest as t1')
+            .select(
+                't1.*',
+                't2.fullname as fullname',
+                't3.part_name as part_name'
+            )
+            .leftJoin('db_main.users as t2', 't1.scanby', 't2.id')
+            .leftJoin(
+                'manifest_data as t3',
+                function () {
+                this.on('t1.manifest_id', '=', 't3.manifest')
+                    .andOn('t1.scan_part', '=', 't3.part_no');
+                }
+            )
+            .where('t1.plant_id', filters.plantId);
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async logManifestData(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._logManifestData(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async logManifestDataFiltered(filters, columnSearches) {
+        let query = this._logManifestData(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async logManifestDataCountAll(filters) {
+        let query = siiDb('scan_manifest').where({plant_id: filters.plantId})
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+    //====================================================================================================================
     //LOG SCAN
     //====================================================================================================================
     //====================================================================================================================
