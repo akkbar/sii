@@ -126,9 +126,9 @@ class siiModel {
         try {
             // Use INSERT IGNORE to skip duplicates
             await siiDb.raw(`
-                INSERT IGNORE INTO manifest_data (manifest, arrival_date, arrival_time, dock_code, pline_code, pline_no, supplier_name, supplier_code, order_no, subroute, outtime, part_no, part_name, unique_no, box_type, qty_per_kanban, qty_kanban, qty_order)
+                INSERT IGNORE INTO manifest_data (manifest, arrival_date, arrival_time, dock_code, pline_code, pline_no, supplier_name, supplier_code, order_no, subroute, outtime, part_no, part_name, unique_no, box_type, qty_per_kanban, qty_kanban, qty_order, plant_id, user_id)
                 VALUES ?
-            `, [data.map(item => [item.manifest, item.arrival_date, item.arrival_time, item.dock_code, item.pline_code, item.pline_no, item.supplier_name, item.supplier_code, item.order_no, item.subroute, item.outtime, item.part_no, item.part_name, item.unique_no, item.box_type, item.qty_per_kanban, item.qty_kanban, item.qty_order])]);
+            `, [data.map(item => [item.manifest, item.arrival_date, item.arrival_time, item.dock_code, item.pline_code, item.pline_no, item.supplier_name, item.supplier_code, item.order_no, item.subroute, item.outtime, item.part_no, item.part_name, item.unique_no, item.box_type, item.qty_per_kanban, item.qty_kanban, item.qty_order, item.plant_id, item.user_id])]);
 
             return { success: true, message: 'Manifests inserted successfully (duplicates ignored).' };
         } catch (error) {

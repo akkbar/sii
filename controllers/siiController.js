@@ -264,7 +264,7 @@ exports.dataManifestAjax = async (req, res) => {
                     no,
                     `${Number(record.proses).toFixed(2)}`,
                     deleteButton,
-                    `${record.arrival_date} ${record.arrival_time}`,
+                    `${moment(record.arrival_date).format('YYYY-MM-DD')} ${record.arrival_time}`,
                     formattedDate,
                     record.dock_code,
                     record.pline_code,
@@ -352,6 +352,8 @@ exports.dataManifestSubmit = async (req, res) => {
                         qty_per_kanban: qty_per_kanban,
                         qty_kanban: qty_kanban,
                         qty_order: qty_order,
+                        plant_id: req.session.user.plantId,
+                        user_id: req.session.user.id,
                     });
                 }
             }
@@ -361,7 +363,7 @@ exports.dataManifestSubmit = async (req, res) => {
         }
 
         // Insert data into the database using the model
-        const result = await siiModel.insertManifests(dataToInsert);
+        const result = await siiModel.addManifestData(dataToInsert);
 
         if (result.success) {
         return res.status(200).json({ message: result.message, insertedRows: dataToInsert.length });
@@ -401,10 +403,7 @@ function convertDateTime(inputDateTime) {
         return null;
     }
 
-    return {
-        date: parsedDateTime.format("YYYY-MM-DD"), // Date-only format
-        dateTime: parsedDateTime.format("YYYY-MM-DD HH:mm:ss"), // Full datetime format
-    };
+    return parsedDateTime.format("YYYY-MM-DD HH:mm:ss")
 }
 function convertTime(inputTime) {
     if (!inputTime) {
@@ -1186,7 +1185,7 @@ exports.trashManifest = async (req, res) => {
         if (id) {
             const decryptedId = encryptModel.decryptOA(id);
             await siiModel.editManifestByMan({ isvalid: 0 }, decryptedId, plantId);
-            return res.redirect('/sii/manifest_log_data');
+            return res.redirect('/sii/logDataManifest');
         } else if (yid) {
             // Mark manifest as valid
             const decryptedYid = encryptModel.decryptOA(yid);
