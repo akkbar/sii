@@ -48,7 +48,7 @@ class siiModel {
      // Delete manifest records older than a specific date
     async deleteManifestOlderThan(date, plantId) {
         return await siiDb('manifest_data')
-        .whereRaw("substr(na7, 1, 19) <= ?", [date])
+        .whereRaw("substr(arrival_date, 1, 19) <= ?", [date])
         .andWhere('plant_id', plantId)
         .del();
     }
@@ -64,7 +64,7 @@ class siiModel {
     // Update manifest records older than a specific date
     async editManifestOlderThan(data, date, plantId) {
         return await siiDb('manifest_data')
-        .whereRaw("substr(na7, 1, 19) <= ?", [date])
+        .whereRaw("substr(arrival_date, 1, 19) <= ?", [date])
         .andWhere('plant_id', plantId)
         .update(data);
     }
@@ -79,6 +79,46 @@ class siiModel {
           .limit(10); // Limit the results to 10
     
         return result; // Return the query results
+    }
+    //====================================================================================================================
+    //====================================================================================================================
+    //DATA MANIFEST
+    //====================================================================================================================
+    //====================================================================================================================
+    _manifestData(filters, columnSearches) {
+        let query = siiDb('manifest_data as t1')
+            .select(
+                't1.*',
+                't2.fullname as fullname'
+            )
+            .leftJoin('db_main.users as t2', 't1.user_id', 't2.id')
+            .where('t1.plant_id', filters.plantId)
+            .where('t1.isvalid', 1)
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async manifestData(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._manifestData(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async manifestDataFiltered(filters, columnSearches) {
+        let query = this._manifestData(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async manifestDataCountAll(filters) {
+        let query = siiDb('manifest_data').where({plant_id: filters.plantId})
+        const result = await query.count('* as total').where('isvalid', 1).first()
+        return result ? result.total : 0;
     }
     //====================================================================================================================
     //====================================================================================================================

@@ -21,7 +21,7 @@ class Shiroki extends BaseController{
 		$this->global['pageTitle'] = 'Dashboard';
 		$this->loadViews("shiroki/shiroki_dash", $this->global, $data, NULL);
 	}
-	function shiroki_monitor_manifest(){
+	function shiroki_monitor_manifest(){ 
 		$data['manifest_table'] = $this->shiroki_model->monitor_manifest($this->plant_id);
 		$this->load->view('shiroki/shiroki_monitor_manifest', $data);
 	}
@@ -368,84 +368,84 @@ class Shiroki extends BaseController{
 			$this->loadThis('Nampaknya anda seorang hacker...');
 		}
 	}
-	function shiroki_manifest_data(){
-		$this->global['pageTitle'] = 'Manifest Data';
-		$this->loadViews("shiroki/shiroki_manifest_data", $this->global, NULL, NULL);
-	}
-	function shiroki_manifest_ajax(){
-		$list = $this->shiroki_model->get_manifest_data_dt($this->plant_id);
-		$data = array();
-		$res = array();
-        $no = $_POST['start'];
-        foreach ($list as $record){
-			$no++;
-			$xid = $this->encrypt_model->my_encrypt($record->manifest);
-            $row = array();
-			$row[] = $no;
-			$row[] = $record->proses + 0;
-			$aa = $record->manifest;
-			//if(date('U') > date('U', strtotime(substr($record->na7, 0, -4)))){
-				$aa .= ' <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Buang ke Tempat Sampah"><i class="fa fa-trash-alt"></i></button>
-				<div class="modal fade" id="masterdata'.$no.'">
-					<div class="modal-dialog">
-					<form action="'.base_url().'shiroki_trash_manifest" method="POST">
-						<div class="modal-content">
-							<div class="modal-header">
-								<h4 class="modal-title">Buang Manifest</h4>
-								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-								<span aria-hidden="true">&times;</span></button>
-							</div>
-							<div class="modal-body">
-								Apakah anda yakin ingin memindahkan ke tempat sampah ?
-							</div>
-							<div class="modal-footer justify-content-between">
-								<input type="hidden" name="id" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
-							</div>
-						</div>
-					</form>
-					</div>
-				</div>';
-			//}
-			$row[] .= $aa;
-			$row[] = $record->supplier_code;
-			$row[] = $record->na1;
-			$row[] = $record->na2;
-			$row[] = $record->na3;
-			$row[] = $record->dock_code;
-			$row[] = $record->order_no;
-			$row[] = $record->part_no;
-			$row[] = $record->prodline_tmmin;
-			$row[] = $record->na4;
-			$row[] = $record->na5;
-			$row[] = $record->unique_no;
-			$row[] = $record->qty_per_kanban;
-			$row[] = $record->qty_order;
-			$row[] = $record->qty_kanban;
-			$row[] = $record->supplier;
-			$row[] = $record->part_name;
-			$row[] = $record->na6;
-			$row[] = $record->na7;
-			$row[] = $record->na8;
-			$row[] = $record->na9;
-			$row[] = $record->part_nox;
-			$row[] = $record->multi;
-			$row[] = $record->submit_time;
-			$row[] = $record->update_time;
-			$row[] = $record->uName;
-			$xx = '<a href="'.base_url().'shiroki_log_manifest/'.$xid.'" class="btn btn-sm btn-primary">Cek Hasil Scan</a>';
-			$row[] = $xx;
-			$data[] = $row;
-        }
-        $output = array(
-			"draw" => $_POST['draw'],
-			"recordsTotal" => $this->shiroki_model->manifest_data_count_all($this->plant_id),
-			"recordsFiltered" => $this->shiroki_model->manifest_data_count_filtered($this->plant_id),
-			"data" => $data
-		);
-        echo json_encode($output);	
-	}
+	// function shiroki_manifest_data(){
+	// 	$this->global['pageTitle'] = 'Manifest Data';
+	// 	$this->loadViews("shiroki/shiroki_manifest_data", $this->global, NULL, NULL);
+	// }
+	// function shiroki_manifest_ajax(){
+	// 	$list = $this->shiroki_model->get_manifest_data_dt($this->plant_id);
+	// 	$data = array();
+	// 	$res = array();
+    //     $no = $_POST['start'];
+    //     foreach ($list as $record){
+	// 		$no++;
+	// 		$xid = $this->encrypt_model->my_encrypt($record->manifest);
+    //         $row = array();
+	// 		$row[] = $no;
+	// 		$row[] = $record->proses + 0;
+	// 		$aa = $record->manifest;
+	// 		//if(date('U') > date('U', strtotime(substr($record->na7, 0, -4)))){
+	// 			$aa .= ' <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata'.$no.'" title="Buang ke Tempat Sampah"><i class="fa fa-trash-alt"></i></button>
+	// 			<div class="modal fade" id="masterdata'.$no.'">
+	// 				<div class="modal-dialog">
+	// 				<form action="'.base_url().'shiroki_trash_manifest" method="POST">
+	// 					<div class="modal-content">
+	// 						<div class="modal-header">
+	// 							<h4 class="modal-title">Buang Manifest</h4>
+	// 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	// 							<span aria-hidden="true">&times;</span></button>
+	// 						</div>
+	// 						<div class="modal-body">
+	// 							Apakah anda yakin ingin memindahkan ke tempat sampah ?
+	// 						</div>
+	// 						<div class="modal-footer justify-content-between">
+	// 							<input type="hidden" name="id" value="'.$this->encrypt_model->my_encrypt($record->manifest).'">
+	// 							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	// 							<button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
+	// 						</div>
+	// 					</div>
+	// 				</form>
+	// 				</div>
+	// 			</div>';
+	// 		//}
+	// 		$row[] .= $aa;
+	// 		$row[] = $record->supplier_code;
+	// 		$row[] = $record->na1;
+	// 		$row[] = $record->na2;
+	// 		$row[] = $record->na3;
+	// 		$row[] = $record->dock_code;
+	// 		$row[] = $record->order_no;
+	// 		$row[] = $record->part_no;
+	// 		$row[] = $record->prodline_tmmin;
+	// 		$row[] = $record->na4;
+	// 		$row[] = $record->na5;
+	// 		$row[] = $record->unique_no;
+	// 		$row[] = $record->qty_per_kanban;
+	// 		$row[] = $record->qty_order;
+	// 		$row[] = $record->qty_kanban;
+	// 		$row[] = $record->supplier;
+	// 		$row[] = $record->part_name;
+	// 		$row[] = $record->na6;
+	// 		$row[] = $record->na7;
+	// 		$row[] = $record->na8;
+	// 		$row[] = $record->na9;
+	// 		$row[] = $record->part_nox;
+	// 		$row[] = $record->multi;
+	// 		$row[] = $record->submit_time;
+	// 		$row[] = $record->update_time;
+	// 		$row[] = $record->uName;
+	// 		$xx = '<a href="'.base_url().'shiroki_log_manifest/'.$xid.'" class="btn btn-sm btn-primary">Cek Hasil Scan</a>';
+	// 		$row[] = $xx;
+	// 		$data[] = $row;
+    //     }
+    //     $output = array(
+	// 		"draw" => $_POST['draw'],
+	// 		"recordsTotal" => $this->shiroki_model->manifest_data_count_all($this->plant_id),
+	// 		"recordsFiltered" => $this->shiroki_model->manifest_data_count_filtered($this->plant_id),
+	// 		"data" => $data
+	// 	);
+    //     echo json_encode($output);	
+	// }
 	function get_client_ip() {
 		$ipaddress = '';
 		if (isset($_SERVER['HTTP_CLIENT_IP']))

@@ -164,6 +164,137 @@ exports.monitorManifestAjax = async (req, res) => {
 }
 //==========================================================================================================================
 //==========================================================================================================================
+//DATA MANIFEST
+//==========================================================================================================================
+//==========================================================================================================================
+exports.dataManifest = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Data Manifest', user: req.session.user}
+        res.render('sii/dataManifest', { header: header });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.dataManifestAjax = async (req, res) => {
+    const filters = {
+        plantId: req.session.user.plantId,
+        draw: req.body.draw,
+        start: req.body.start,
+        length: req.body.length,
+        search_value: req.body.search['value'],
+        order: req.body.order || []
+    };
+    const columnNames = [
+        null,
+        'proses',
+        'manifest',
+        null,
+        null,
+        'dock_code',
+        null,
+        null,
+        null,
+        null,
+
+        'order_no',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        
+        null,
+        null,
+    ];
+    const columnSearches = req.body.columns.map((col, index) => {
+        if (col.search.value && col.orderable) {
+            return { column: columnNames[index], value: col.search.value }
+        }
+        return null
+    }).filter(col => col)
+
+    try {
+        const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
+        const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
+        
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'manifest'
+        
+        const data = await siiModel.manifestData(filters, orderColumn, orderDirection, columnSearches)
+
+        const recordsFiltered = await siiModel.manifestDataFiltered(filters, columnSearches)
+
+        const output = {
+            draw: filters.draw,
+            recordsTotal: await siiModel.manifestDataCountAll(filters),
+            recordsFiltered,
+            data: data.map((record, index) => {
+                const no = Number(filters.start) + index + 1;
+                const encryptManifest = encryptModel.encryptOA(record.manifest); // Encrypt manifest
+                const formattedDate = moment(record.outime).format('YYYY-MM-DD HH:mm'); // Format date
+                const cekButton = `<a href="/sii/logManifest/${encryptManifest}" class="btn btn-sm btn-primary">Cek Hasil Scan</a>`;
+                const deleteButton = `${record.manifest} <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdata${no}" title="Buang ke Tempat Sampah"><i class="fa fa-trash-alt"></i></button>
+                    <div class="modal fade" id="masterdata${no}">
+                        <div class="modal-dialog">
+                        <form action="/sii/trash_manifest" method="POST">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">Buang Manifest</h4>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    Apakah anda yakin ingin memindahkan ke tempat sampah ?
+                                </div>
+                                <div class="modal-footer justify-content-between">
+                                    <input type="hidden" name="id" value="${encryptManifest}">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-danger"><i class="fa fa-trash-alt"></i> Buang</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>`
+                return [
+                    no,
+                    `${Number(record.proses).toFixed(2)}`,
+                    deleteButton,
+                    `${record.arrival_date} ${record.arrival_time}`,
+                    formattedDate,
+                    record.dock_code,
+                    record.pline_code,
+                    record.pline_no,
+                    record.supplier_name,
+                    record.supplier_code,
+
+                    record.order_no,
+                    record.subroute,
+                    record.part_no,
+                    record.part_name,
+                    record.unique_no,
+                    record.box_type,
+                    record.qty_per_kanban,
+                    record.qty_kanban,
+                    record.qty_order,
+                    record.submit_time,
+
+                    record.update_time,
+                    cekButton,
+                ];
+            }),
+        };
+        res.json(output)
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestAjax' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
+//==========================================================================================================================
+//==========================================================================================================================
 //LOG MANIFEST
 //==========================================================================================================================
 //==========================================================================================================================
@@ -218,7 +349,7 @@ exports.logDataManifestAjax = async (req, res) => {
             data: data.map((record, index) => {
                 const no = Number(filters.start) + index + 1;
                 const encryptManifest = encryptModel.encryptOA(record.manifest); // Encrypt manifest
-                const formattedDate = moment(record.na7.substring(0, record.na7.length - 4)).format('YYYY-MM-DD HH:mm:ss'); // Format date
+                const formattedDate = moment(record.outime).format('YYYY-MM-DD HH:mm'); // Format date
                 
                 return [
                     no, // Row number

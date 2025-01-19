@@ -7,6 +7,9 @@ const authorizeRoles = require('../middlewares/authorizeRoles');
 router.get('/dashboard', isAuthenticated, siiController.getDashboard)
 
 
+router.get('/dataManifest', isAuthenticated, siiController.dataManifest)
+router.post('/dataManifest', isAuthenticated, siiController.dataManifestAjax)
+
 router.get('/logDataManifest', isAuthenticated, siiController.logDataManifest)
 router.post('/logDataManifest', isAuthenticated, siiController.logDataManifestAjax)
 
