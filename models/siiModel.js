@@ -535,14 +535,14 @@ class siiModel {
     async getManifestTable(manifest, plantId) {
         try {
             // Fetch manifest table data with aggregated `sum_kanban`
-            const result = await db('manifest_data')
+            const result = await siiDb('manifest_data')
                 .select(
                     '*',
-                    db.raw('SUM(qty_kanban) as sum_kanban')
+                    siiDb.raw('SUM(qty_kanban) as sum_kanban')
                 )
                 .where('plant_id', plantId)
                 .andWhere('manifest', manifest)
-                .groupBy('manifest', 'part_no');
+                .groupBy('manifest', 'part_no')
         
             // If no results, return an empty array
             if (!result || result.length === 0) {
@@ -565,7 +565,7 @@ class siiModel {
                         row.qty_per_kanban * row.sum_kanban,
                         good,
                         ng,
-                        row.sum_kanban - good,
+                        row.qty_per_kanban * row.sum_kanban - good,
                     ];
                 })
             );
@@ -580,18 +580,17 @@ class siiModel {
     async getResultManifestScan(manifest, part, result, plantId) {
         try {
             // Base query
-            const query = db('manifest_data as t1')
+            const query = siiDb('manifest_data as t1')
                 .join('scan_manifest as t2', function () {
                     this.on('t1.manifest', '=', 't2.manifest_id')
                         .andOn('t1.part_no', '=', 't2.scan_part')
-                        .orOn('t1.part_nox', '=', 't2.scan_part')
-                        .andOn('t2.result', '=', db.raw('?', [result]));
+                        .andOn('t2.result', '=', siiDb.raw('?', [result]));
                 })
                 .where('t1.plant_id', plantId)
-                .andWhere('t1.manifest', manifest)
-                .andWhere('t1.part_no', part)
-                .andWhere('t1.isvalid', 1)
-                .andWhereNotNull('t2.scan_part')
+                .where('t1.manifest', manifest)
+                .where('t1.part_no', part)
+                .where('t1.isvalid', 1)
+                .whereNotNull('t2.scan_part')
                 .groupBy('t2.id');
     
           // Execute the query and return the count

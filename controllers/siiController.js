@@ -1025,12 +1025,12 @@ exports.manifestHaltAjax = async (req, res) => {
             recordsFiltered,
             data: data.map((record, index) => {
                 const no = Number(filters.start) + index + 1;
-                const encryptID = encryptModel.encryptOA(record.id)
+                const encryptManifest = encryptModel.encryptOA(record.manifest)
                 return [
                     no,
                     record.kode,
                     record.prog,
-                    `<a href="/sii/logManifest/${encryptID}" class="btn btn-sm btn-primary">Cek Hasil Scan</a>`,
+                    `<a href="/sii/logManifest/${encryptManifest}" class="btn btn-sm btn-primary">Cek Hasil Scan</a>`,
                     record.nama,
                     record.alasan,
                     record.tanggal,
@@ -1102,14 +1102,13 @@ exports.sampahAjax = async (req, res) => {
             recordsFiltered,
             data: data.map((record, index) => {
                 const no = Number(filters.start) + index + 1;
-                const encryptID = encryptModel.encryptOA(record.id)
                 const encryptManifest = encryptModel.encryptOA(record.manifest)
                 return [
                     no,
                     record.manifest,
                     record.order_no,
-                    `<a href="/sii/log_manifest/${encryptID}" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> ${Math.round(record.prog * 100) / 100}%</a>`,
-                    moment(record.na7.substring(0, record.na7.length - 4)).format('DD-MM-YYYY HH:mm'),
+                    `<a href="/sii/logManifest/${encryptManifest}" class="btn btn-primary btn-sm"><i class="fa fa-file"></i> ${Math.round(record.prog * 100) / 100}%</a>`,
+                    moment(record.outtime).format('DD-MM-YYYY HH:mm'),
                     record.dock_code,
                     `
                         <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#masterdatax${no}" title="Buang Permanent"><i class="fa fa-trash-alt"></i></button>
@@ -1241,13 +1240,12 @@ exports.logManifest = async (req, res) => {
         }
         const data = {
             manifest_table: manifestData,
-            manifest: encryptID
+            manifest: encryptModel.decryptOA(encryptID),
+            encryptID
         }
+        const header = {pageTitle: 'Log Manifest Data', user: req.session.user}
         // Render the response or send JSON
-        res.render('sii/logManifest', {
-            pageTitle: 'Log Manifest Data',
-            data: data,
-        });
+        res.render('sii/logManifest', { header, data});
     } catch (error) {
         console.error('Error in logManifest:', error.message);
         res.status(500).send('An error occurred while processing the request');
