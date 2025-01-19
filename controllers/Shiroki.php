@@ -280,94 +280,94 @@ class Shiroki extends BaseController{
 	}
 
 
-	function shiroki_manifest_input(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->useradmin > 0){
-				$this->global['pageTitle'] = 'Manifest Data Input';
-				$this->loadViews("shiroki/shiroki_manifest_input", $this->global, NULL, NULL);
-			}else{
-				$this->loadThis('Hanya Admin yang dapat mengakses fitur ini.');
-			}
-		}else{
-			$this->loadThis('Nampaknya anda seorang hacker...');
-		}
-	}
-	function shiroki_manifest_submit(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->useradmin > 0){
-				$manifest = $this->input->post('manifest');
-				$supplier_code = $this->input->post('supplier_code');
-				$na1 = $this->input->post('na1');
-				$na2 = $this->input->post('na2');
-				$na3 = $this->input->post('na3');
-				$dock_code = $this->input->post('dock_code');
-				$order_no = $this->input->post('order_no');
-				$part_no = $this->input->post('part_no');
-				$prodline_tmmin = $this->input->post('prodline_tmmin');
-				$na4 = $this->input->post('na4');
-				$na5 = $this->input->post('na5');
-				$unique_no = $this->input->post('unique_no');
-				$qty_per_kanban = $this->input->post('qty_per_kanban');
-				$qty_order = $this->input->post('qty_order');
-				$qty_kanban = $this->input->post('qty_kanban');
-				$supplier = $this->input->post('supplier');
-				$part_name = $this->input->post('part_name');
-				$na6 = $this->input->post('na6');
-				$na7 = $this->input->post('na7');
-				$na8 = $this->input->post('na8');
-				$na9 = $this->input->post('na9');
-				$part_nox = $this->input->post('part_nox');
-				$multi = $this->input->post('multi');
-				$a = 0;
-				if(!empty($manifest)){
-					foreach($manifest as $manif){
-						$input_array = array(
-							'manifest'=>$manifest[$a],
-							'supplier_code'=>$supplier_code[$a],
-							'na1'=>$na1[$a],
-							'na2'=>$na2[$a],
-							'na3'=>$na3[$a],
-							'dock_code'=>$dock_code[$a],
-							'order_no'=>$order_no[$a],
-							'part_no'=>$part_no[$a],
-							'prodline_tmmin'=>$prodline_tmmin[$a],
-							'na4'=>$na4[$a],
-							'na5'=>$na5[$a],
-							'unique_no'=>$unique_no[$a],
-							'qty_per_kanban'=>$qty_per_kanban[$a],
-							'qty_order'=>$qty_order[$a],
-							'qty_kanban'=>$qty_kanban[$a],
-							'supplier'=>$supplier[$a],
-							'part_name'=>$part_name[$a],
-							'na6'=>$na6[$a],
-							'na7'=>$na7[$a],
-							'na8'=>$na8[$a],
-							'na9'=>$na9[$a],
-							'part_nox'=>$part_nox[$a],
-							'multi'=>$multi[$a],
-							'user_id'=>$this->user_id,
-							'plant_id'=>$this->plant_id
-						);
-						$cek = $this->shiroki_model->get_manifest_bydata($manifest[$a], $part_no[$a], $unique_no[$a], $qty_kanban[$a], $multi[$a], $this->plant_id);
-						if(!empty($cek)){
-							$update = $this->shiroki_model->delete_manifest_data($cek->id);
-							$insert = $this->shiroki_model->add_manifest_data($input_array);
-						}else{
-							$insert = $this->shiroki_model->add_manifest_data($input_array);
-						}
-						$a++;
-					}
-				}
-				redirect('shiroki_manifest_data');
-			}else{
-				$this->loadThis('Hanya Admin yang dapat mengakses fitur ini.');
-			}
-		}else{
-			$this->loadThis('Nampaknya anda seorang hacker...');
-		}
-	}
+	// function shiroki_manifest_input(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->useradmin > 0){
+	// 			$this->global['pageTitle'] = 'Manifest Data Input';
+	// 			$this->loadViews("shiroki/shiroki_manifest_input", $this->global, NULL, NULL);
+	// 		}else{
+	// 			$this->loadThis('Hanya Admin yang dapat mengakses fitur ini.');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Nampaknya anda seorang hacker...');
+	// 	}
+	// }
+	// function shiroki_manifest_submit(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->useradmin > 0){
+	// 			$manifest = $this->input->post('manifest');
+	// 			$supplier_code = $this->input->post('supplier_code');
+	// 			$na1 = $this->input->post('na1');
+	// 			$na2 = $this->input->post('na2');
+	// 			$na3 = $this->input->post('na3');
+	// 			$dock_code = $this->input->post('dock_code');
+	// 			$order_no = $this->input->post('order_no');
+	// 			$part_no = $this->input->post('part_no');
+	// 			$prodline_tmmin = $this->input->post('prodline_tmmin');
+	// 			$na4 = $this->input->post('na4');
+	// 			$na5 = $this->input->post('na5');
+	// 			$unique_no = $this->input->post('unique_no');
+	// 			$qty_per_kanban = $this->input->post('qty_per_kanban');
+	// 			$qty_order = $this->input->post('qty_order');
+	// 			$qty_kanban = $this->input->post('qty_kanban');
+	// 			$supplier = $this->input->post('supplier');
+	// 			$part_name = $this->input->post('part_name');
+	// 			$na6 = $this->input->post('na6');
+	// 			$na7 = $this->input->post('na7');
+	// 			$na8 = $this->input->post('na8');
+	// 			$na9 = $this->input->post('na9');
+	// 			$part_nox = $this->input->post('part_nox');
+	// 			$multi = $this->input->post('multi');
+	// 			$a = 0;
+	// 			if(!empty($manifest)){
+	// 				foreach($manifest as $manif){
+	// 					$input_array = array(
+	// 						'manifest'=>$manifest[$a],
+	// 						'supplier_code'=>$supplier_code[$a],
+	// 						'na1'=>$na1[$a],
+	// 						'na2'=>$na2[$a],
+	// 						'na3'=>$na3[$a],
+	// 						'dock_code'=>$dock_code[$a],
+	// 						'order_no'=>$order_no[$a],
+	// 						'part_no'=>$part_no[$a],
+	// 						'prodline_tmmin'=>$prodline_tmmin[$a],
+	// 						'na4'=>$na4[$a],
+	// 						'na5'=>$na5[$a],
+	// 						'unique_no'=>$unique_no[$a],
+	// 						'qty_per_kanban'=>$qty_per_kanban[$a],
+	// 						'qty_order'=>$qty_order[$a],
+	// 						'qty_kanban'=>$qty_kanban[$a],
+	// 						'supplier'=>$supplier[$a],
+	// 						'part_name'=>$part_name[$a],
+	// 						'na6'=>$na6[$a],
+	// 						'na7'=>$na7[$a],
+	// 						'na8'=>$na8[$a],
+	// 						'na9'=>$na9[$a],
+	// 						'part_nox'=>$part_nox[$a],
+	// 						'multi'=>$multi[$a],
+	// 						'user_id'=>$this->user_id,
+	// 						'plant_id'=>$this->plant_id
+	// 					);
+	// 					$cek = $this->shiroki_model->get_manifest_bydata($manifest[$a], $part_no[$a], $unique_no[$a], $qty_kanban[$a], $multi[$a], $this->plant_id);
+	// 					if(!empty($cek)){
+	// 						$update = $this->shiroki_model->delete_manifest_data($cek->id);
+	// 						$insert = $this->shiroki_model->add_manifest_data($input_array);
+	// 					}else{
+	// 						$insert = $this->shiroki_model->add_manifest_data($input_array);
+	// 					}
+	// 					$a++;
+	// 				}
+	// 			}
+	// 			redirect('shiroki_manifest_data');
+	// 		}else{
+	// 			$this->loadThis('Hanya Admin yang dapat mengakses fitur ini.');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Nampaknya anda seorang hacker...');
+	// 	}
+	// }
 	// function shiroki_manifest_data(){
 	// 	$this->global['pageTitle'] = 'Manifest Data';
 	// 	$this->loadViews("shiroki/shiroki_manifest_data", $this->global, NULL, NULL);

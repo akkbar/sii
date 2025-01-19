@@ -1,4 +1,5 @@
 const siiModel = require('../models/siiModel')
+const bodyParser = require('body-parser');
 const encryptModel = require('../models/encryptModel')
 const logError = require('../middlewares/errorlogger')
 const moment = require('moment')
@@ -292,6 +293,132 @@ exports.dataManifestAjax = async (req, res) => {
         await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
+}
+exports.dataManifestInput = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Input Manifest', user: req.session.user}
+        res.render('sii/dataManifestInput', { header: header });
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestInput' })
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.dataManifestSubmit = async (req, res) => {
+    const { manifests } = req.body;
+    if (!manifests || !Array.isArray(manifests) || manifests.length === 0) {
+        return res.status(400).json({ message: 'Invalid manifests data' });
+    }
+    try {
+        const dataToInsert = [];
+        manifests.forEach((row) => {
+            const manifest = row.extractedTexts[0]?.trim();
+            const arrival_date = row.extractedTexts[1]?.trim();
+            const arrival_time = row.extractedTexts[2]?.trim();
+            const dock_code = row.extractedTexts[3]?.trim();
+            const pline_code = row.extractedTexts[4]?.trim();
+            const pline_no = row.extractedTexts[5]?.trim();
+            const supplier_name = row.extractedTexts[6]?.trim();
+            const supplier_code = row.extractedTexts[7]?.trim();
+            const order_no = row.extractedTexts[8]?.trim();
+            const subroute = row.extractedTexts[9]?.trim();
+            const outtime = row.extractedTexts[10]?.trim();
+
+            for (let i = 11; i < row.extractedTexts.length; i += 7) {
+                const part_no = row.extractedTexts[i]?.trim();
+                const part_name = row.extractedTexts[i + 1]?.trim();
+                const unique_no = row.extractedTexts[i + 2]?.trim();
+                const box_type = row.extractedTexts[i + 3]?.trim();
+                const qty_per_kanban = row.extractedTexts[i + 4]?.trim();
+                const qty_kanban = row.extractedTexts[i + 5]?.trim();
+                const qty_order = row.extractedTexts[i + 6]?.trim();
+
+                if (part_no) {
+                    dataToInsert.push({
+                        manifest: manifest,
+                        arrival_date: convertDate(arrival_date) || null,
+                        arrival_time: convertTime(arrival_time) || null,
+                        dock_code: dock_code || null,
+                        pline_code: pline_code || null,
+                        pline_no: pline_no || null,
+                        supplier_name: supplier_name || null,
+                        supplier_code: supplier_code || null,
+                        order_no: order_no || null,
+                        subroute: subroute || null,
+                        outtime: convertDateTime(outtime) || null,
+                        part_no: part_no,
+                        part_name: part_name || null,
+                        unique_no: unique_no || null,
+                        box_type: box_type || null,
+                        qty_per_kanban: qty_per_kanban,
+                        qty_kanban: qty_kanban,
+                        qty_order: qty_order,
+                    });
+                }
+            }
+        });
+        if (dataToInsert.length === 0) {
+            return res.status(400).json({ message: 'No valid part data to insert' });
+        }
+
+        // Insert data into the database using the model
+        const result = await siiModel.insertManifests(dataToInsert);
+
+        if (result.success) {
+        return res.status(200).json({ message: result.message, insertedRows: dataToInsert.length });
+        } else {
+        return res.status(500).json({ message: result.message });
+        }
+        
+    } catch (error) {
+        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestSubmit' })
+        res.status(500).json({ error: 'An error occurred while fetching the data' })
+    }
+}
+// Function to safely convert date
+function convertDate(inputDate) {
+    if (!inputDate) {
+        console.error("Error: Input date is empty.");
+        return null;
+    }
+
+    const parsedDate = moment(inputDate, "DD/MM/YYYY", true); // Strict parsing
+    if (!parsedDate.isValid()) {
+        console.error("Error: Invalid date format.");
+        return null;
+    }
+
+    return parsedDate.format("YYYY-MM-DD");
+}
+function convertDateTime(inputDateTime) {
+    if (!inputDateTime) {
+        console.error("Error: Input is empty.");
+        return null;
+    }
+
+    const parsedDateTime = moment(inputDateTime, "DD/MM/YYYY HH:mm", true); // Strict parsing
+    if (!parsedDateTime.isValid()) {
+        console.error("Error: Invalid date-time format.");
+        return null;
+    }
+
+    return {
+        date: parsedDateTime.format("YYYY-MM-DD"), // Date-only format
+        dateTime: parsedDateTime.format("YYYY-MM-DD HH:mm:ss"), // Full datetime format
+    };
+}
+function convertTime(inputTime) {
+    if (!inputTime) {
+        console.error("Error: Input time is empty.");
+        return null;
+    }
+
+    const parsedTime = moment(inputTime, "HH:mm", true); // Strict parsing
+    if (!parsedTime.isValid()) {
+        console.error("Error: Invalid time format.");
+        return null;
+    }
+
+    return parsedTime.format("HH:mm:ss");
 }
 //==========================================================================================================================
 //==========================================================================================================================

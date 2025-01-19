@@ -1,0 +1,395 @@
+<%- include(headerPath) %>
+
+<div class="content-wrapper">
+	<section class="content-header">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <h1><i class="fa fa-upload"></i> Input Manifest Data</h1>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="pdfInput" multiple accept=".pdf">
+                                <label class="custom-file-label" for="customFile">Pilih file .pdf (support multi upload)</label>
+                            </div>
+                            <button onclick="processPDF()">Extract Text</button>
+                        </div>
+                        <form method="POST" action="/sii/manifest_submit">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12 col-xs-12 table-responsive" id="output">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary">Submit</button>
+                            <span id="tot"></span>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/libs/pdfjs-dist/build/pdf.worker.js';
+    let manifests = []
+
+    // Submit the manifests data to the backend
+    async function submitManifests(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        if (!manifests.length) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No data to submit. Please extract the data first.',
+            });
+            return;
+        }
+        // Validate all manifests before submitting
+        const invalidFiles = manifests.filter((manifest) => {
+            const manifestValue = manifest.extractedTexts[0]?.trim();
+            const firstPartNoValue = manifest.extractedTexts[11]?.trim();
+            return !manifestValue || !firstPartNoValue;
+        });
+
+        if (invalidFiles.length > 0) {
+            const invalidFileNames = invalidFiles.map((file) => file.fileName).join(', ');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `The following files are missing required data and cannot be submitted:\n` +
+                `${invalidFileNames}`,
+            });
+            return; // Stop submission if there are invalid files
+        }
+
+        try {
+            const response = await fetch('/sii/manifestInput', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ manifests }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('Server Response:', result);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Manifests submitted successfully!',
+                }).then(() => {
+                    // Redirect after the user clicks "OK"
+                    window.location.href = '/sii/dataManifest';
+                });
+            } else {
+                console.error('Error Response:', result);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: result.message || 'An error occurred.',
+                });
+            }
+        } catch (error) {
+            console.error('Submission Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: result.message || 'An error occurred while submitting the data.',
+            });
+        }
+    }
+    document.querySelector('form').addEventListener('submit', submitManifests);
+
+
+
+
+    async function processPDF() {
+        const input = document.getElementById('pdfInput');
+        const files = input.files;
+
+        if (!files.length) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please upload one or more PDF files.',
+            });
+            return;
+        }
+
+        const results = [];
+        for (const file of files) {
+            // Load the PDF
+            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+
+            // Get the first page (update logic here if you need multiple pages)
+            const page = await pdf.getPage(1);
+
+            // Define multiple bounding boxes (reuse your predefined areas)
+            const areas = [
+                { x1: 40, y1: 100, x2: 152, y2: 114 }, // Manifest
+                { x1: 417, y1: 52, x2: 489, y2: 71 }, // Arrival Date
+                { x1: 492, y1: 52, x2: 551, y2: 71 }, // Arrival Time
+                { x1: 554, y1: 52, x2: 604, y2: 71 }, // Dock Code
+                { x1: 416, y1: 88, x2: 536, y2: 112 }, // P-Lane COde
+                { x1: 539, y1: 88, x2: 603, y2: 112 }, // P-lane no
+                { x1: 41, y1: 147, x2: 284, y2: 168 }, // Supplier name
+                { x1: 287, y1: 147, x2: 344, y2: 168 }, // supplier code
+                { x1: 346, y1: 147, x2: 488, y2: 168 }, // order no
+                { x1: 40, y1: 190, x2: 100, y2: 241 }, // sub route
+                { x1: 542, y1: 200, x2: 602, y2: 241 }, // out time
+
+                //PART 1
+                { x1: 66, y1: 300, x2: 143, y2: 327 }, // part no
+                { x1: 144, y1: 300, x2: 279, y2: 327 }, // part name
+                { x1: 280, y1: 300, x2: 313, y2: 327 }, // uniq
+                { x1: 314, y1: 300, x2: 365, y2: 327 }, // box
+                { x1: 366, y1: 300, x2: 398, y2: 327 }, // pcs/kanban
+                { x1: 399, y1: 300, x2: 428, y2: 327 }, // no kanban
+                { x1: 427, y1: 300, x2: 460, y2: 327 }, // total
+                
+                //PART 2
+                { x1: 66, y1: 328, x2: 143, y2: 356 }, // part no
+                { x1: 144, y1: 328, x2: 279, y2: 356 }, // part name
+                { x1: 280, y1: 328, x2: 313, y2: 356 }, // uniq
+                { x1: 314, y1: 328, x2: 365, y2: 356 }, // box
+                { x1: 366, y1: 328, x2: 398, y2: 356 }, // pcs/kanban
+                { x1: 399, y1: 328, x2: 428, y2: 356 }, // no kanban
+                { x1: 427, y1: 328, x2: 460, y2: 356 }, // total
+                
+                //PART 3
+                { x1: 66, y1: 357, x2: 143, y2: 385 }, // part no
+                { x1: 144, y1: 357, x2: 279, y2: 385 }, // part name
+                { x1: 280, y1: 357, x2: 313, y2: 385 }, // uniq
+                { x1: 314, y1: 357, x2: 365, y2: 385 }, // box
+                { x1: 366, y1: 357, x2: 398, y2: 385 }, // pcs/kanban
+                { x1: 399, y1: 357, x2: 428, y2: 385 }, // no kanban
+                { x1: 427, y1: 357, x2: 460, y2: 385 }, // total
+                
+                //PART 4
+                { x1: 66, y1: 385, x2: 143, y2: 413 }, // part no
+                { x1: 144, y1: 385, x2: 279, y2: 413 }, // part name
+                { x1: 280, y1: 385, x2: 313, y2: 413 }, // uniq
+                { x1: 314, y1: 385, x2: 365, y2: 413 }, // box
+                { x1: 366, y1: 385, x2: 398, y2: 413 }, // pcs/kanban
+                { x1: 399, y1: 385, x2: 428, y2: 413 }, // no kanban
+                { x1: 427, y1: 385, x2: 460, y2: 413 }, // total
+                
+                //PART 5
+                { x1: 66, y1: 414, x2: 143, y2: 442 }, // part no
+                { x1: 144, y1: 414, x2: 279, y2: 442 }, // part name
+                { x1: 280, y1: 414, x2: 313, y2: 442 }, // uniq
+                { x1: 314, y1: 414, x2: 365, y2: 442 }, // box
+                { x1: 366, y1: 414, x2: 398, y2: 442 }, // pcs/kanban
+                { x1: 399, y1: 414, x2: 428, y2: 442 }, // no kanban
+                { x1: 427, y1: 414, x2: 460, y2: 442 }, // total
+                
+                //PART 6
+                { x1: 66, y1: 442, x2: 143, y2: 470 }, // part no
+                { x1: 144, y1: 442, x2: 279, y2: 470 }, // part name
+                { x1: 280, y1: 442, x2: 313, y2: 470 }, // uniq
+                { x1: 314, y1: 442, x2: 365, y2: 470 }, // box
+                { x1: 366, y1: 442, x2: 398, y2: 470 }, // pcs/kanban
+                { x1: 399, y1: 442, x2: 428, y2: 470 }, // no kanban
+                { x1: 427, y1: 442, x2: 460, y2: 470 }, // total
+                
+                //PART 7
+                { x1: 66, y1: 471, x2: 143, y2: 499 }, // part no
+                { x1: 144, y1: 471, x2: 279, y2: 499 }, // part name
+                { x1: 280, y1: 471, x2: 313, y2: 499 }, // uniq
+                { x1: 314, y1: 471, x2: 365, y2: 499 }, // box
+                { x1: 366, y1: 471, x2: 398, y2: 499 }, // pcs/kanban
+                { x1: 399, y1: 471, x2: 428, y2: 499 }, // no kanban
+                { x1: 427, y1: 471, x2: 460, y2: 499 }, // total
+                
+                //PART 8
+                { x1: 66, y1: 499, x2: 143, y2: 527 }, // part no
+                { x1: 144, y1: 499, x2: 279, y2: 527 }, // part name
+                { x1: 280, y1: 499, x2: 313, y2: 527 }, // uniq
+                { x1: 314, y1: 499, x2: 365, y2: 527 }, // box
+                { x1: 366, y1: 499, x2: 398, y2: 527 }, // pcs/kanban
+                { x1: 399, y1: 499, x2: 428, y2: 527 }, // no kanban
+                { x1: 427, y1: 499, x2: 460, y2: 527 }, // total
+                
+                //PART 9
+                { x1: 66, y1: 528, x2: 143, y2: 556 }, // part no
+                { x1: 144, y1: 528, x2: 279, y2: 556 }, // part name
+                { x1: 280, y1: 528, x2: 313, y2: 556 }, // uniq
+                { x1: 314, y1: 528, x2: 365, y2: 556 }, // box
+                { x1: 366, y1: 528, x2: 398, y2: 556 }, // pcs/kanban
+                { x1: 399, y1: 528, x2: 428, y2: 556 }, // no kanban
+                { x1: 427, y1: 528, x2: 460, y2: 556 }, // total
+                
+                //PART 10
+                { x1: 66, y1: 556, x2: 143, y2: 584 }, // part no
+                { x1: 144, y1: 556, x2: 279, y2: 584 }, // part name
+                { x1: 280, y1: 556, x2: 313, y2: 584 }, // uniq
+                { x1: 314, y1: 556, x2: 365, y2: 584 }, // box
+                { x1: 366, y1: 556, x2: 398, y2: 584 }, // pcs/kanban
+                { x1: 399, y1: 556, x2: 428, y2: 584 }, // no kanban
+                { x1: 427, y1: 556, x2: 460, y2: 584 }, // total
+                
+                //PART 11
+                { x1: 66, y1: 585, x2: 143, y2: 613 }, // part no
+                { x1: 144, y1: 585, x2: 279, y2: 613 }, // part name
+                { x1: 280, y1: 585, x2: 313, y2: 613 }, // uniq
+                { x1: 314, y1: 585, x2: 365, y2: 613 }, // box
+                { x1: 366, y1: 585, x2: 398, y2: 613 }, // pcs/kanban
+                { x1: 399, y1: 585, x2: 428, y2: 613 }, // no kanban
+                { x1: 427, y1: 585, x2: 460, y2: 613 }, // total
+                
+                //PART 12
+                { x1: 66, y1: 613, x2: 143, y2: 631 }, // part no
+                { x1: 144, y1: 613, x2: 279, y2: 631 }, // part name
+                { x1: 280, y1: 613, x2: 313, y2: 631 }, // uniq
+                { x1: 314, y1: 613, x2: 365, y2: 631 }, // box
+                { x1: 366, y1: 613, x2: 398, y2: 631 }, // pcs/kanban
+                { x1: 399, y1: 613, x2: 428, y2: 631 }, // no kanban
+                { x1: 427, y1: 613, x2: 460, y2: 631 }, // total
+            ];
+
+            // Extract text from all defined areas
+            const extractedTexts = await extractTextFromAreas(page, areas);
+
+            // Add the results for this file
+            results.push({
+                fileName: file.name,
+                extractedTexts,
+            });
+
+            // Draw the table
+            drawTable(results);
+        }
+        manifests = results
+        console.log(manifests)
+    }
+    // Function to draw the table
+    function drawTable(results) {
+        const outputElement = document.getElementById('output');
+        outputElement.innerHTML = ''; // Clear previous content
+
+        results.forEach((result) => {
+            // Create a table for each file
+            const table_head = document.createElement('table');
+            table_head.classList.add('table');
+
+            
+            const table = document.createElement('table');
+            table.classList.add('table');
+
+            // Add file name
+            const caption = document.createElement('caption');
+            caption.textContent = `File: ${result.fileName}`;
+            table.appendChild(caption);
+
+            // Add metadata rows
+            const metadataRow = `
+                <tr>
+                    <th>Manifest</th><td>${result.extractedTexts[0]}</td>
+                    <th>Arrival Date</th><td>${result.extractedTexts[1]}</td>
+                    <th>Arrival Time</th><td>${result.extractedTexts[2]}</td>
+                    <th>Dock Code</th><td>${result.extractedTexts[3]}</td>
+                </tr>
+                <tr>
+                    <th>P-Lane Code</th><td>${result.extractedTexts[4]}</td>
+                    <th>P-Lane No</th><td>${result.extractedTexts[5]}</td>
+                    <th>Supplier Name</th><td>${result.extractedTexts[6]}</td>
+                    <th>Supplier Code</th><td>${result.extractedTexts[7]}</td>
+                </tr>
+                <tr>
+                    <th>Order No</th><td>${result.extractedTexts[8]}</td>
+                    <th>Sub Route</th><td>${result.extractedTexts[9]}</td>
+                    <th>Out Time</th><td>${result.extractedTexts[10]}</td>
+                    <td></td><td></td>
+                </tr>
+            `;
+            table_head.innerHTML += metadataRow;
+
+            // Add part data rows
+            const partHeader = `
+            <tr>
+                <th>NO</th>
+                <th>Part No</th>
+                <th>Part Name</th>
+                <th>Uniq No</th>
+                <th>Box Type</th>
+                <th>Pcs/Kanban</th>
+                <th>No Kanban</th>
+                <th>Total</th>
+            </tr>
+            `;
+            table.innerHTML += partHeader;
+
+            for (let i = 11; i < result.extractedTexts.length; i += 7) {
+                const cek = result.extractedTexts[i] || ''
+                const partRow = `
+                    <tr>
+                    <td>${((i-11)/7)+1}</td>
+                    <td>${result.extractedTexts[i] || ''}</td>
+                    <td>${result.extractedTexts[i + 1] || ''}</td>
+                    <td>${result.extractedTexts[i + 2] || ''}</td>
+                    <td>${result.extractedTexts[i + 3] || ''}</td>
+                    <td>${result.extractedTexts[i + 4] || ''}</td>
+                    <td>${result.extractedTexts[i + 5] || ''}</td>
+                    <td>${result.extractedTexts[i + 6] || ''}</td>
+                    </tr>
+                `;
+                if(cek != ''){
+                    table.innerHTML += partRow;
+                }
+            }
+
+            outputElement.appendChild(table_head);
+            outputElement.appendChild(table);
+        });
+    }
+    async function extractTextFromAreas(page, areas) {
+        const viewport = page.getViewport({ scale: 1.0 });
+        const textContent = await page.getTextContent();
+
+        return areas.map((area, index) => {
+            // Filter items within the area and combine them into a single string
+            let rawText = textContent.items
+            .filter((item) => {
+                const [x, y] = item.transform.slice(4, 6); // Get X and Y coordinates
+                const adjustedY = viewport.height - y; // Flip Y for canvas coordinate system
+
+                return (
+                x >= area.x1 &&
+                x <= area.x2 &&
+                adjustedY >= area.y1 &&
+                adjustedY <= area.y2
+                );
+            })
+            .map((item) => item.str)
+            .join(' '); // Combine all text into a single string
+
+            // Specific cleaning logic for index 1 and 9
+            if (index === 1 || index === 9) {
+                return rawText.replace(/\s+/g, ''); // Remove all whitespace
+            }
+
+            // Clean up the string
+            return rawText
+            .trim() // Remove leading and trailing whitespace
+            .replace(/\s+/g, ' '); // Replace multiple spaces with a single space
+        });
+    }
+  </script>
+
+<%- include(footerPath) %>
