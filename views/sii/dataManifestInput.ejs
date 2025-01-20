@@ -17,8 +17,8 @@
                     <div class="card">
                         <div class="card-header">
                             <div class="custom-file mb-2">
-                                <input type="file" class="custom-file-input" id="pdfInput" multiple accept=".pdf">
-                                <label class="custom-file-label" for="customFile">Step 1: Pilih file .pdf (support multi upload)</label>
+                                <input type="file" class="custom-file-input" id="pdfInput" multiple accept=".pdf" onchange="updateFileLabel()">
+                                <label class="custom-file-label" id="pdfInputLabel" for="pdfInput">Step 1: Pilih file .pdf (support multi upload)</label>
                             </div>
                             <br>
                             <button onclick="processPDF()" class="btn btn-primary">Step 2: Extract Text</button>
@@ -44,6 +44,17 @@
 </div>
 
 <script>
+    function updateFileLabel() {
+        const input = document.getElementById('pdfInput');
+        const label = document.getElementById('pdfInputLabel');
+        const fileNames = Array.from(input.files).map(file => file.name);
+
+        if (fileNames.length > 0) {
+            label.textContent = fileNames.join(', ');
+        } else {
+            label.textContent = 'Step 1: Pilih file .pdf (support multi upload)';
+        }
+    }
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/libs/pdfjs-dist/build/pdf.worker.js';
     let manifests = []
 

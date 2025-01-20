@@ -85,6 +85,47 @@ class siiModel {
     //DATA MANIFEST
     //====================================================================================================================
     //====================================================================================================================
+    _manifestMon(filters, columnSearches) {
+        let query = siiDb('manifest_data')
+            .select(siiDb.raw('*, AVG(proses) as prog'))
+            .where('plant_id', filters.plantId)
+            .andWhere('isvalid', 1)
+            .andWhere('outtime', '>=', siiDb.raw(`DATE_SUB(NOW(), INTERVAL 3 DAY)`))
+            .andWhere('outtime', '<=', siiDb.raw(`DATE_ADD(NOW(), INTERVAL 3 DAY)`))
+            .having('prog', '<', 100)
+            .groupBy('manifest');
+
+        columnSearches.forEach(search => {
+            query.where(search.column, 'like', `%${search.value}%`)
+        });
+        return query
+    }
+    async manifestMon(filters, orderColumn, orderDirection, columnSearches) {
+        let query = this._manifestMon(filters, columnSearches)
+        
+        query.orderBy(orderColumn, orderDirection)
+        query.limit(filters.length).offset(filters.start)
+
+        const results = await query
+        return results
+    }
+
+    async manifestMonFiltered(filters, columnSearches) {
+        let query = this._manifestMon(filters, columnSearches)
+
+        const result = await query.count('* as total').first()
+        return result ? result.total : 0;
+    }
+    async manifestMonCountAll(filters) {
+        let query = siiDb('manifest_data').where({plant_id: filters.plantId})
+        const result = await query.count('* as total').where('isvalid', 1).first()
+        return result ? result.total : 0;
+    }
+    //====================================================================================================================
+    //====================================================================================================================
+    //DATA MANIFEST
+    //====================================================================================================================
+    //====================================================================================================================
     _manifestData(filters, columnSearches) {
         let query = siiDb('manifest_data as t1')
             .select(
@@ -209,19 +250,19 @@ class siiModel {
     _logManifestData(filters, columnSearches) {
         let query = siiDb('scan_manifest as t1')
             .select(
-                't1.*',
+                't3.*',
                 't2.fullname as fullname',
-                't3.part_name as part_name'
             )
             .leftJoin('db_main.users as t2', 't1.scanby', 't2.id')
-            .leftJoin(
+            .innerJoin(
                 'manifest_data as t3',
                 function () {
-                this.on('t1.manifest_id', '=', 't3.manifest')
-                    .andOn('t1.scan_part', '=', 't3.part_no');
+                    this.on('t1.manifest_id', '=', 't3.manifest')
+                        .andOn('t1.scan_part', '=', 't3.part_no'); // Inner join ensures t3 must exist
                 }
             )
-            .where('t1.plant_id', filters.plantId);
+            .where('t1.plant_id', filters.plantId)
+            .groupBy('t1.manifest_id')
         columnSearches.forEach(search => {
             query.where(search.column, 'like', `%${search.value}%`)
         });
@@ -386,7 +427,7 @@ class siiModel {
                 avg_proses: null,
                 unique_no: 'xxxxxxxxxxx',
                 good: 0,
-                shi: 0,
+                sii: 0,
             };
     
             // Query shiroki_manifest_shiroki table
@@ -442,7 +483,7 @@ class siiModel {
                 // .andWhereRaw("kanban_sii LIKE CONCAT('%-', ?)", [result.unique_no])
                 .andWhere('kanban_sii', sii);
     
-            result.shi = res3.count || 0;
+            result.sii = res3.count || 0;
     
             return result;
         } catch (error) {
@@ -816,7 +857,7 @@ class siiModel {
                         row.qty_per_kanban * row.sum_kanban,
                         good,
                         ng,
-                        row.qty_per_kanban * row.sum_kanban - good,
+                        row.sum_kanban - good,
                     ];
                 })
             );

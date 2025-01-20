@@ -194,7 +194,7 @@ exports.createProfile = async (req, res) => {
         if (user) {
             res.status(500).json({ message: 'Username already exists.' })
         }
-        const hashedPassword = await bcrypt.hash('Barka123654', 10)
+        const hashedPassword = await bcrypt.hash('OA123654', 10)
         const data = {
             username: sanitizedData.username,
             fullname: sanitizedData.fullname,
@@ -230,7 +230,7 @@ exports.updateUser = async (req, res) => {
         }
         let data = []
         if(isReset == 1){
-            const hashedPassword = await bcrypt.hash('Barka123654', 10)
+            const hashedPassword = await bcrypt.hash('OA123654', 10)
             data = {
                 user_role: userData.user_role,
                 password: hashedPassword,

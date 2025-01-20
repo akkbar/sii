@@ -5,13 +5,15 @@ const isAuthenticated = require('../middlewares/authMiddleware')
 const authorizeRoles = require('../middlewares/authorizeRoles');
 
 router.get('/dashboard', isAuthenticated, siiController.getDashboard)
+router.post('/monitorManifestAjax', isAuthenticated, siiController.monitorManifestAjax)
+
 
 router.get('/runManifest', isAuthenticated, siiController.runManifest)
 router.post('/cekManifest', isAuthenticated, siiController.cekManifest)
 router.get('/manifestOngoing', isAuthenticated, siiController.manifestOngoing)
 router.post('/prosesManifest', isAuthenticated, siiController.prosesManifest)
 router.post('/submitTutupManifest', isAuthenticated, siiController.submitTutupManifest)
-router.post('/manifestCancel', isAuthenticated, siiController.manifestCancel)
+router.get('/manifestCancel', isAuthenticated, siiController.manifestCancel)
 router.get('/manifestTable', isAuthenticated, siiController.manifestTable)
 router.post('/cekPartManifest', isAuthenticated, siiController.cekPartManifest)
 router.post('/cekSiiManifest', isAuthenticated, siiController.cekSiiManifest)

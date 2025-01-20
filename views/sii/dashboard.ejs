@@ -71,7 +71,7 @@
                             <div class="icon">
                                 <i class="fa fa-running"></i>
                             </div>
-                            <a href="/sii/manifest_run" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="/sii/runManifest" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -83,7 +83,7 @@
                             <div class="icon">
                                 <i class="fa fa-upload"></i>
                             </div>
-                            <a href="/sii/manifest_input" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="/sii/manifestInput" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -95,7 +95,7 @@
                             <div class="icon">
                                 <i class="fa fa-users"></i>
                             </div>
-                            <a href="/sii/setting" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="/users" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -107,7 +107,7 @@
                             <div class="icon">
                                 <i class="fa fa-clipboard-list"></i>
                             </div>
-                            <a href="/sii/master_data" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="/sii/dataKanban" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@
                             <div class="card-header">
                                 <h3 class="card-title">Realtime Manifest Monitor</h3>
                                 <div class="card-tools">
-                                    <a href="/sii/manifest_log_data"><i class="fa fa-clipboard-check"></i> Detail</a>
+                                    <a href="/sii/logDataManifest"><i class="fa fa-clipboard-check"></i> Detail</a>
                                 </div>
                             </div>
                             <div class="card-body">
@@ -143,65 +143,72 @@
         </section>
     </div>
     <script>
-        // var table;
-        // // $(document).ready(function() {
-        //     table = $('#table').DataTable({ 
-        //         processing: true,
-        //         serverSide: true,
-        //         order: [],
-        //         stateSave: true,
-        //         ajax: {
-        //             url: "<?php echo site_url('shiroki_monitor_manifest_ajax')?>",
-        //             type: "POST",
-        //             data: function ( data ) {
-        //             }
-        //         },
-        //         columnDefs: [
-        //             { orderable: false, targets: [ 0, 1, 2, 5] }
-        //         ],
-        //         aoColumns: [
-        //             null,
-        //             null,
-        //             null,
-        //             null,
-        //             null,
-        //             null
-        //             ],
-        //         dom:
-        //         "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
-        //         "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
-        //         "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
-        //             fade: false,
-        //         language: {
-        //             buttons: {
-        //                 colvis: 'Columns'
-        //             },
-        //             searchPlaceholder: "Search records",
-        //             search: ""
-        //         },
-        //         createdRow: function( row, data, dataIndex ) {
-        //             var part1 = data[4].split(' ');
-        //             var part2 = part1[0].split('-');
-        //             var ddate = part2[2] + '-' + part2[1] + '-' + part2[0] + 'T' + part1[1] + ':00Z';
-        //             var unix = Date.parse(ddate);
-        //             var ts = Math. round((new Date()). getTime() + <?php echo GMT_HOUR*3600000; ?>);
-        //             var xx = unix - ts;
-        //             console.log(unix + ' ' + ts);
-        //             if(xx > 0 && xx <= 1800000){
-        //                 $(row).addClass('hampir');
-        //             }else if(xx <= 0){
-        //                 $(row).addClass('tewas');
-        //             }
-        //         }
-        //     });
+        var table;
+        // $(document).ready(function() {
+            table = $('#table').DataTable({ 
+                processing: true,
+                serverSide: true,
+                order: [],
+                stateSave: true,
+                ajax: {
+                    url: "/sii/monitorManifestAjax",
+                    type: "POST",
+                    data: function ( data ) {
+                    }
+                },
+                columnDefs: [
+                    { orderable: false, targets: [ 0, 1, 2, 5] }
+                ],
+                aoColumns: [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                    ],
+                dom:
+                "<'row'<'col-lg-6 col-md-6 col-sm-12 col-12'l><'col-lg-6 col-md-6 col-sm-12 col-12'f>>" +
+                "<'row'<'col-lg-12 col-md-12 col-12 table-responsive'tr>>" +
+                "<'row'<'col-lg-5 col-md-5 col-12'i><'col-lg-7 col-md-7 col-12'p>>",
+                    fade: false,
+                language: {
+                    buttons: {
+                        colvis: 'Columns'
+                    },
+                    searchPlaceholder: "Search records",
+                    search: ""
+                },
+                createdRow: function( row, data, dataIndex ) {
+                    const part1 = data[4].split(' '); // Split the date and time
+                    const part2 = part1[0].split('-'); // Split the date into components (DD-MM-YYYY)
+                    
+                    // Convert to ISO format: YYYY-MM-DDTHH:mm:ssZ
+                    const ddate = `${part2[2]}-${part2[1]}-${part2[0]}T${part1[1]}:00Z`;
+                    const unix = Date.parse(ddate); // Get Unix timestamp of parsed date
+
+                    // Get current timestamp adjusted for GMT offset
+                    const gmtOffset = new Date().getTimezoneOffset() * 60000; // Offset in milliseconds
+                    const ts = Date.now() - gmtOffset; // Adjust for timezone
+
+                    // Calculate the difference
+                    const xx = unix - ts;
+                    console.log(unix + ' ' + ts);
+                    if(xx > 0 && xx <= 1800000){
+                        $(row).addClass('hampir');
+                    }else if(xx <= 0){
+                        $(row).addClass('tewas');
+                    }
+                }
+            });
         
-        // load_manifest();
-        // function load_manifest(){
-        //     table.ajax.reload();
-        //     // table2.ajax.reload();
-        // }
-        // setInterval(function(){
-        //     load_manifest();
-        // }, 10000);
+        load_manifest();
+        function load_manifest(){
+            table.ajax.reload();
+            // table2.ajax.reload();
+        }
+        setInterval(function(){
+            load_manifest();
+        }, 10000);
     </script>
 <%- include(footerPath) %>

@@ -18,14 +18,14 @@ exports.getDashboard = async (req, res) => {
     const allKanban = await siiModel.countAllKanban(plantId);
 
     // Simulate the `auto_remove` logic if needed
-    const x = await autoRemove(plantId);
+    const x = 0//await autoRemove(plantId);
 
     // Prepare data for rendering
     const data = {
-        open_manifest: openManifest.count,
-        all_manifest: allManifest.count,
-        all_user: allUser.count,
-        all_kanban: allKanban.count,
+        open_manifest: openManifest,
+        all_manifest: allManifest,
+        all_user: allUser,
+        all_kanban: allKanban,
         x,
     };
     res.render('sii/dashboard', {header: header, data:data})
@@ -78,6 +78,7 @@ exports.monitorManifest = async (req, res) => {
 
 exports.monitorManifestAjax = async (req, res) => {
     const filters = {
+        plantId: req.session.user.plantId,
         draw: req.body.draw,
         start: req.body.start,
         length: req.body.length,
@@ -85,10 +86,12 @@ exports.monitorManifestAjax = async (req, res) => {
         order: req.body.order || []
     };
     const columnNames = [
-        'fullname',
-        'user_role',
-        'last_login',
-        null
+        null,
+        'manifest',
+        null,
+        'proses',
+        'outtime',
+        'dock_code'
     ];
     const columnSearches = req.body.columns.map((col, index) => {
         if (col.search.value && col.orderable) {
@@ -101,29 +104,29 @@ exports.monitorManifestAjax = async (req, res) => {
         const orderColumnIndex = filters.order.length > 0 ? filters.order[0].column : null
         const orderDirection = filters.order.length > 0 ? filters.order[0].dir : 'asc'
         
-        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'fullname'
+        const orderColumn = orderColumnIndex !== null ? columnNames[orderColumnIndex] : 'manifest'
         
-        const data = await mainModel.userList(filters, orderColumn, orderDirection, columnSearches)
+        const data = await siiModel.manifestMon(filters, orderColumn, orderDirection, columnSearches)
 
-        const recordsFiltered = await mainModel.userListFiltered(filters, columnSearches)
+        const recordsFiltered = await siiModel.manifestMonFiltered(filters, columnSearches)
 
         const output = {
             draw: filters.draw,
-            recordsTotal: await mainModel.userListCountAll(),
+            recordsTotal: await siiModel.manifestMonCountAll(filters),
             recordsFiltered,
-            data: data.map(record => {
+            data: data.map((record, index) => {
+                const no = Number(filters.start) + index + 1;
                 return [
-                    record.fullname,
-                    record.user_role,
-                    record.last_login,
-                    `<button class="btn btn-sm btn-primary" onclick="show_modal('${record.id}')"><i class="fa fa-pencil-alt"></i> Edit</button>
-                    ${
-                        record.user_role !== 'Admin' 
-                            ? `<button class="btn btn-sm btn-danger" onclick="delete_modal('${record.id}')">
-                                   <i class="fa fa-trash-alt"></i> Delete
-                               </button>`
-                            : ''
-                    }`
+                    no,
+                    record.manifest,
+                    Number(record.prog).toFixed(1),
+                    `<div class="progress mb-3">
+                        <div class="progress-bar bg-success" role="progressbar" aria-valuenow="${Number(record.prog).toFixed(0)}" aria-valuemin="0" aria-valuemax="100" style="width: ${Number(record.prog).toFixed(1)}%">
+                            <span class="sr-only">${Number(record.prog).toFixed(1)}%</span>
+                        </div>
+                    </div>`,
+                    moment(record.outtime).format('DD-MM-YYYY HH:mm'),
+                    record.dock_code
                 ];
             })
         };
@@ -141,7 +144,6 @@ exports.monitorManifestAjax = async (req, res) => {
 //==========================================================================================================================
 exports.runManifest = async (req, res) => {
     try {
-        const plantId = req.session.user.plantId;
         const module = req.session.use_alarm
 
         if (module) {
@@ -342,7 +344,7 @@ exports.manifestCancel = async (req, res) => {
         // Retrieve the process progress from the session
         const prosesManifest = req.session.proses_manifest;
 
-        if (prosesManifest === 100) {
+        if (prosesManifest == 100) {
             // If the process is complete, unset the running manifest
             req.session.run_manifest = null;
 
@@ -485,8 +487,8 @@ exports.cekSiiManifest = async (req, res) => {
         // Get manifest part shiroki data
         const getRow = await siiModel.getManifestPartSii(manifest, part, sii, req.session.user.plantId);
 
-        if (getRow && getRow.manifest && getRow.shi > 0) {
-            if (getRow.good >= getRow.qty_kanban) {
+        if (getRow && getRow.manifest && getRow.sii > 0) {
+            if (getRow.good >= getRow.sum_kanban) {
                 // Part already fully scanned
                 const scanData = {
                     manifest_id: manifest,
@@ -501,7 +503,7 @@ exports.cekSiiManifest = async (req, res) => {
 
                 return res.json({
                     note: 'Part ini sudah ter-scan komplit!',
-                    sig: `good:${getRow.good} all:${getRow.qty_kanban}`,
+                    sig: `good:${getRow.good} all:${getRow.sum_kanban}`,
                     scan_salah: 0,
                 });
             } else {
@@ -1107,7 +1109,7 @@ exports.logDataManifestAjax = async (req, res) => {
                     record.order_no, // Order number
                     // Progress link
                     `<a href="/sii/logManifest/${encryptManifest}" class="btn btn-primary btn-sm">
-                    <i class="fa fa-file"></i> ${record.prog.toFixed(2)}%
+                    <i class="fa fa-file"></i> ${Number(record.proses).toFixed(2)}%
                     </a>`,
                     formattedDate, // Date
                     record.dock_code, // Dock code
@@ -1699,7 +1701,7 @@ exports.sampahAjax = async (req, res) => {
         'manifest',
         'order_no',
         null,
-        'na7',
+        'outtime',
         'dock_code',
         null,
     ];
@@ -1877,7 +1879,7 @@ exports.logManifest = async (req, res) => {
 }
 exports.logManifestAjax = async (req, res) => {
     const filters = {
-        manifest: req.params.manifest,
+        manifest: encryptModel.decryptOA(req.params.manifest),
         plantId: req.session.user.plantId,
         draw: req.body.draw,
         start: req.body.start,
