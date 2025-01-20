@@ -1,8 +1,11 @@
 const siiModel = require('../models/siiModel')
 const bodyParser = require('body-parser');
+const os = require('os');
 const encryptModel = require('../models/encryptModel')
 const logError = require('../middlewares/errorlogger')
 const moment = require('moment')
+const { exec, execSync } = require('child_process');
+
 
 exports.getDashboard = async (req, res) => {
     const header = {pageTitle: 'Dashboard', user: req.session.user}
@@ -163,6 +166,177 @@ exports.monitorManifestAjax = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
+//==========================================================================================================================
+//==========================================================================================================================
+//RUN MANIFEST
+//==========================================================================================================================
+//==========================================================================================================================
+exports.runManifest = async (req, res) => {
+    try {
+        const plantId = req.session.user.plantId;
+        const module = req.session.use_alarm
+
+        if (module) {
+            if (!req.session.run_manifest) {
+                const header = {pageTitle: 'Data Manifest', user: req.session.user}
+                res.render('/sii/manifestRun', {header});
+            } else {
+                // Redirect to ongoing manifest page
+                res.redirect('/sii/manifestOngoing');
+            }
+        } else {
+            // Redirect to list alarm page
+            res.redirect('/sii/listAlarm');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.listAlarm = async (req, res) => {
+    try {
+        const header = {pageTitle: 'Alarm Module', user: req.session.user}
+        res.render('sii/alarmList', {header});
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+exports.setAlarm = async (req, res) => {
+    try {
+        const unitIp = req.body.unit_ip;
+
+        if (!unitIp) {
+            return res.status(400).json({ message: 'Serial Port (unit_ip) is required.' });
+        }
+
+        req.session.use_alarm = unitIp;
+
+        return res.status(200).json({ message: `Alarm successfully set to ${unitIp}` });
+    } catch (error) {
+        console.error('Error in setAlarm:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+}
+exports.cekModule = async (req, res) => {
+    try {
+        res.setHeader('Content-Type', 'application/json');
+
+        const isWindows = os.platform() === 'win32';
+        let array = {};
+
+        if (isWindows) {
+            // Execute 'mode' command to get available COM ports
+            exec('mode', (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error executing mode: ${stderr}`);
+                    res.status(500).json({ error: 'Error scanning COM ports' });
+                    return;
+                }
+
+                const output = stdout.split('\n');
+                let option = '<option value="No Alarm">No Alarm</option>';
+                output.forEach(line => {
+                    const match = line.match(/COM\d+/);
+                    if (match) {
+                        option += `<option value="${match[0]}">${match[0]}</option>`;
+                    }
+                });
+
+                array.hasil_scan = output.join(', ').replace(/\n/g, '<br>');
+                array.list_scan = option;
+
+                // Send the response as JSON
+                res.json(array);
+            });
+        } else {
+            // Execute 'dmesg | grep tty' to get available tty devices
+            exec('dmesg | grep tty', (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error executing dmesg: ${stderr}`);
+                    res.status(500).json({ error: 'Error scanning tty devices' });
+                    return;
+                }
+
+                const lines = stdout.split('\n');
+                let valid = [];
+
+                lines.forEach(row => {
+                    const words = row.split(' ');
+                    words.forEach(word => {
+                        if (word.includes('tty')) {
+                            valid.push(word.replace(/[^A-Za-z0-9]/g, ''));
+                        }
+                    });
+                });
+
+                const uniqueDevices = [...new Set(valid)];
+                let option = '<option value="No Alarm">No Alarm</option>';
+
+                uniqueDevices.forEach(device => {
+                    option += `<option value="/dev/${device}">/dev/${device}</option>`;
+                });
+
+                array.hasil_scan = stdout.replace(/\n/g, '<br>');
+                array.list_scan = option;
+
+                // Send the response as JSON
+                res.json(array);
+            });
+        }
+    } catch (error) {
+        console.error('Unexpected Error:', error);
+        res.status(500).json({ error: 'Unexpected server error' });
+    }
+}
+exports.testModule = async (req, res) => {
+    try {
+        const listScan = req.body.list_scan; // Serial port name, e.g., COM3 or /dev/ttyUSB0
+        const testData = req.body.test_data; // Data to send to the Arduino
+
+        if (!listScan || !testData) {
+            return res.status(400).json({ error: 'Invalid input. list_scan and test_data are required.' });
+        }
+
+        if (listScan !== 'No Alarm') {
+            const command =
+                process.platform === 'win32'
+                    ? `MODE ${listScan}: BAUD=9600 PARITY=N DATA=8 STOP=1 && ECHO ${testData} > ${listScan}`
+                    : `stty -F ${listScan} 9600 cs8 -cstopb -parenb && echo -n "${testData}" > ${listScan}`;
+
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    console.error('Error executing command:', error.message);
+                    console.error('stderr:', stderr);
+                    return res.status(500).json({
+                        error: 'Command execution failed.',
+                        details: stderr,
+                    });
+                }
+
+                console.log('Command executed successfully.');
+                console.log('stdout:', stdout);
+
+                // Send back a successful response
+                res.status(200).json({
+                    status: 'success',
+                    message: 'Command executed successfully.',
+                    output: stdout,
+                });
+            });
+        } else {
+            // If no alarm, respond immediately
+            res.status(200).json({
+                status: 'success',
+                message: 'No alarm triggered.',
+            });
+        }
+    } catch (error) {
+        console.error('Unexpected error:', error);
+        res.status(500).json({ error: 'Unexpected server error.' });
+    }
+};
+
 //==========================================================================================================================
 //==========================================================================================================================
 //DATA MANIFEST

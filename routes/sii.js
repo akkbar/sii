@@ -6,6 +6,12 @@ const authorizeRoles = require('../middlewares/authorizeRoles');
 
 router.get('/dashboard', isAuthenticated, siiController.getDashboard)
 
+router.get('/runManifest', isAuthenticated, siiController.runManifest)
+router.get('/listAlarm', isAuthenticated, siiController.listAlarm)
+router.post('/setAlarm', isAuthenticated, siiController.setAlarm)
+router.post('/cekModule', isAuthenticated, siiController.cekModule)
+router.post('/testModule', isAuthenticated, siiController.testModule)
+
 
 router.get('/dataManifest', isAuthenticated, siiController.dataManifest)
 router.post('/dataManifest', isAuthenticated, siiController.dataManifestAjax)

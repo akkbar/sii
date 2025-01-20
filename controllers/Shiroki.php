@@ -464,31 +464,31 @@ class Shiroki extends BaseController{
 			$ipaddress = 'UNKNOWN';
 		return $ipaddress;
 	}
-	function shiroki_manifest_run(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
-				$modul = $this->shiroki_model->get_alarm_module(1, $this->plant_id);
-				if(!empty($modul)){
-					$this->session->set_userdata('use_alarm', $modul->unit_ip);
-					if(!$this->session->has_userdata('run_manifest')){
-						$data['alarm'] = $this->shiroki_model->get_alarm_list($this->plant_id);
-						$data['client_ip'] = $this->get_client_ip();
-						$this->global['pageTitle'] = 'Proses Manifest';
-						$this->loadViews("shiroki/shiroki_manifest_run", $this->global, $data, NULL);
-					}else{
-						redirect('shiroki_manifest_ongoing');
-					}
-				}else{
-					redirect('shiroki_list_alarm');
-				}
-			}else{
-				$this->loadThis('Hanya Admin atau Operator yang dapat mengakses fitur ini.');
-			}
-		}else{
-			$this->loadThis('Nampaknya anda seorang hacker...');
-		}
-	}
+	// function shiroki_manifest_run(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
+	// 			$modul = $this->shiroki_model->get_alarm_module(1, $this->plant_id);
+	// 			if(!empty($modul)){
+	// 				$this->session->set_userdata('use_alarm', $modul->unit_ip);
+	// 				if(!$this->session->has_userdata('run_manifest')){
+	// 					$data['alarm'] = $this->shiroki_model->get_alarm_list($this->plant_id);
+	// 					$data['client_ip'] = $this->get_client_ip();
+	// 					$this->global['pageTitle'] = 'Proses Manifest';
+	// 					$this->loadViews("shiroki/shiroki_manifest_run", $this->global, $data, NULL);
+	// 				}else{
+	// 					redirect('shiroki_manifest_ongoing');
+	// 				}
+	// 			}else{
+	// 				redirect('shiroki_list_alarm');
+	// 			}
+	// 		}else{
+	// 			$this->loadThis('Hanya Admin atau Operator yang dapat mengakses fitur ini.');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Nampaknya anda seorang hacker...');
+	// 	}
+	// }
 	function shiroki_proses_manifest(){
 		header("Content-type: text/json");
 		$manifest = $this->session->userdata('run_manifest');
@@ -1116,11 +1116,11 @@ class Shiroki extends BaseController{
 	// 	);
     //     echo json_encode($output);	
 	// }
-	function shiroki_list_alarm(){
-		$this->global['pageTitle'] = 'Alarm Module';
-		$data['modul'] = $this->shiroki_model->get_alarm_module(1, $this->plant_id);
-		$this->loadViews("shiroki/shiroki_alarm_module", $this->global, $data, NULL);
-	}
+	// function shiroki_list_alarm(){
+	// 	$this->global['pageTitle'] = 'Alarm Module';
+	// 	$data['modul'] = $this->shiroki_model->get_alarm_module(1, $this->plant_id);
+	// 	$this->loadViews("shiroki/shiroki_alarm_module", $this->global, $data, NULL);
+	// }
 	function shiroki_list_alarm_ajax(){
 		$list = $this->shiroki_model->get_alarm_dt($this->plant_id);
 		$data = array();
@@ -1211,31 +1211,31 @@ class Shiroki extends BaseController{
 			$this->loadThis('Fitur ini hanya dapat diakses admin');
 		}
 	}
-	function shiroki_tambah_alarm(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->useradmin > -1){
-				$unit_name = 'USB Alarm';
-				$unit_ip = $this->input->post('unit_ip');
-				$unit_port = '';
-				if(!empty($unit_name) and !empty($unit_ip)){
-					$input_array = array(
-						'id'=>1,
-						'unit_name'=>$unit_name,
-						'unit_ip'=>$unit_ip,
-						'unit_port'=>$unit_port,
-						'plant_id'=>$this->plant_id
-					);
-					$insert = $this->shiroki_model->replace_alarm($input_array);
-				}
-				redirect('shiroki_list_alarm');
-			}else{
-				$this->loadThis('Fitur ini hanya dapat diakses admin');
-			}
-		}else{
-			$this->loadThis('Fitur ini hanya dapat diakses admin');
-		}
-	}
+	// function shiroki_tambah_alarm(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->useradmin > -1){
+	// 			$unit_name = 'USB Alarm';
+	// 			$unit_ip = $this->input->post('unit_ip');
+	// 			$unit_port = '';
+	// 			if(!empty($unit_name) and !empty($unit_ip)){
+	// 				$input_array = array(
+	// 					'id'=>1,
+	// 					'unit_name'=>$unit_name,
+	// 					'unit_ip'=>$unit_ip,
+	// 					'unit_port'=>$unit_port,
+	// 					'plant_id'=>$this->plant_id
+	// 				);
+	// 				$insert = $this->shiroki_model->replace_alarm($input_array);
+	// 			}
+	// 			redirect('shiroki_list_alarm');
+	// 		}else{
+	// 			$this->loadThis('Fitur ini hanya dapat diakses admin');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Fitur ini hanya dapat diakses admin');
+	// 	}
+	// }
 	function shiroki_alarm_action(){
 		header("Content-type: text/json");
 		require_once(APPPATH.'libraries/Phpmodbus/ModbusMaster.php');
@@ -1300,66 +1300,66 @@ class Shiroki extends BaseController{
 	// 	fwrite($porta, (string)$data);
 	// 	fclose($porta);
 	// }
-	function shiroki_cek_modul(){
-		header("Content-type: text/json");
-		if (PHP_OS_FAMILY === 'Windows') {
-    		exec('mode', $output);
-			$option = '';
-			foreach ($output as $line) {
-				if (preg_match('/COM\d+/', $line, $matches)) {
-					$option .= '<option value="'.$matches[0].'">'.$matches[0].'</option>';
-				}
-			}
-			$array = array();
-			$array['hasil_scan'] = nl2br(implode(', ', $output));
-			$array['list_scan'] = $option;
-			echo json_encode($array);
-		}else{
-			$hasil = shell_exec('dmesg | grep tty');
-			$var1 = preg_split('/\r\n|\r|\n/', $hasil);
-			$valid = array();
-			if(!empty($var1)){
-				foreach($var1 as $row){
-					$col = explode(' ', $row);
-					if(!empty($col)){
-						foreach($col as $kata){
-							if(strpos($kata, 'tty') !== false){
-								$valid[] = preg_replace("/[^A-Za-z0-9 ]/", '',$kata);
-							}
-						}
-					}
-				}
-			}
-			$arr = array_unique($valid);
-			$option = '';
-			if(!empty($arr)){
-				foreach($arr as $opt){
-					$option .= '<option value="/dev/'.$opt.'">/dev/'.$opt.'</option>';
-				}
-			}
-			$array = array();
-			$array['hasil_scan'] = nl2br($hasil);
-			$array['list_scan'] = $option;
-			echo json_encode($array);
-		}
-	}
-	function shiroki_test_modul(){
-		header("Content-type: text/json");
-		if (PHP_OS_FAMILY === 'Windows') {
-			$py = FCPATH.'uploads\\shiroki\\alarm.py';
-			$port = $this->input->post('list_scan');
-			$data = (string)$this->input->post('test_data');
-			$send = escapeshellarg($port.','.$data);
-			$command = 'python3 ' .$py.' '.$send;
-			exec($command, $output, $return_var);
-		}else{
-			$porta = fopen($this->input->post('list_scan'), "w");
-			// sleep(1);
-			// usleep(500000);
-			fwrite($porta, (string)$this->input->post('test_data'));
-			fclose($porta);
-		}
-	}
+	// function shiroki_cek_modul(){
+	// 	header("Content-type: text/json");
+	// 	if (PHP_OS_FAMILY === 'Windows') {
+    // 		exec('mode', $output);
+	// 		$option = '';
+	// 		foreach ($output as $line) {
+	// 			if (preg_match('/COM\d+/', $line, $matches)) {
+	// 				$option .= '<option value="'.$matches[0].'">'.$matches[0].'</option>';
+	// 			}
+	// 		}
+	// 		$array = array();
+	// 		$array['hasil_scan'] = nl2br(implode(', ', $output));
+	// 		$array['list_scan'] = $option;
+	// 		echo json_encode($array);
+	// 	}else{
+	// 		$hasil = shell_exec('dmesg | grep tty');
+	// 		$var1 = preg_split('/\r\n|\r|\n/', $hasil);
+	// 		$valid = array();
+	// 		if(!empty($var1)){
+	// 			foreach($var1 as $row){
+	// 				$col = explode(' ', $row);
+	// 				if(!empty($col)){
+	// 					foreach($col as $kata){
+	// 						if(strpos($kata, 'tty') !== false){
+	// 							$valid[] = preg_replace("/[^A-Za-z0-9 ]/", '',$kata);
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		$arr = array_unique($valid);
+	// 		$option = '';
+	// 		if(!empty($arr)){
+	// 			foreach($arr as $opt){
+	// 				$option .= '<option value="/dev/'.$opt.'">/dev/'.$opt.'</option>';
+	// 			}
+	// 		}
+	// 		$array = array();
+	// 		$array['hasil_scan'] = nl2br($hasil);
+	// 		$array['list_scan'] = $option;
+	// 		echo json_encode($array);
+	// 	}
+	// }
+	// function shiroki_test_modul(){
+	// 	header("Content-type: text/json");
+	// 	if (PHP_OS_FAMILY === 'Windows') {
+	// 		$py = FCPATH.'uploads\\shiroki\\alarm.py';
+	// 		$port = $this->input->post('list_scan');
+	// 		$data = (string)$this->input->post('test_data');
+	// 		$send = escapeshellarg($port.','.$data);
+	// 		$command = 'python3 ' .$py.' '.$send;
+	// 		exec($command, $output, $return_var);
+	// 	}else{
+	// 		$porta = fopen($this->input->post('list_scan'), "w");
+	// 		// sleep(1);
+	// 		// usleep(500000);
+	// 		fwrite($porta, (string)$this->input->post('test_data'));
+	// 		fclose($porta);
+	// 	}
+	// }
 	function shiroki_alarm($state){
 		if (PHP_OS_FAMILY === 'Windows') {
 			$py = FCPATH.'uploads\\shiroki\\alarm.py';
