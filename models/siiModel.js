@@ -136,6 +136,71 @@ class siiModel {
             return { success: false, message: 'Failed to insert manifests.' };
         }
     }
+    async getManifestNum (manifest, plantId) {
+        try {
+            const result = await siiDb('manifest_data')
+                .select(siiDb.raw('*, MIN(proses) as prog'))
+                .where({ plant_id: plantId, manifest: manifest, isvalid: 1 })
+                .groupBy('manifest');
+    
+            return result.length > 0 ? result[0] : null; // Return the first row or null if no results
+        } catch (error) {
+            console.error('Error in getManifestNum:', error);
+            throw error; // Re-throw the error for higher-level handling
+        }
+    }
+    async getTabelManifestPart (manifest, plantId) {
+        try {
+            const result = await siiDb('manifest_data as t1')
+                .select([
+                    't1.*',
+                    siiDb.raw('SUM(t1.qty_order) as sum_kanban'),
+                    siiDb.raw('COUNT(t2.id) as num'),
+                    't3.kanban_sii',
+                ])
+                .leftJoin('scan_manifest as t2', function () {
+                    this.on('t1.manifest', '=', 't2.manifest_id')
+                        .andOn('t2.result', '=', 1)
+                        .andOn('t2.scan_part', '=', 't1.part_no');
+                })
+                .leftJoin('master_data as t3', function () {
+                    this.on('t3.isvalid', '=', 1)
+                        .andOn('t3.kanban_cus', '=', 't1.part_no')
+                        .andOn('t3.plant_id', '=', 't1.plant_id')
+                        // .andOn(siiDb.raw('t3.kanban_sii LIKE CONCAT("%-", t1.unique_no)'));
+                })
+                .where({
+                    't1.plant_id': plantId,
+                    't1.manifest': manifest,
+                    't1.isvalid': 1,
+                })
+                .groupBy('t1.part_no');
+    
+            return result; // Return the array of rows
+        } catch (error) {
+            console.error('Error in getTabelManifestPart:', error);
+            throw error; // Re-throw for higher-level handling
+        }
+    }
+    async getManifestProses (manifest, plantId) {
+        try {
+            const result = await siiDb('manifest_data')
+                .select(siiDb.raw('AVG(proses) as avg'))
+                .where({
+                    isvalid: 1,
+                    plant_id: plantId,
+                    manifest: manifest,
+                })
+                .groupBy('manifest')
+                .first(); // Return only the first result
+    
+            // Check if `avg` is available in the result and return it, otherwise return 0
+            return result && result.avg ? result.avg : 0;
+        } catch (error) {
+            console.error('Error in getManifestProses:', error);
+            throw error; // Re-throw the error for higher-level handling
+        }
+    }
     //====================================================================================================================
     //====================================================================================================================
     //LOG MANIFEST DATA
@@ -230,6 +295,192 @@ class siiModel {
         const result = await query.count('* as total').first()
         return result ? result.total : 0;
     }
+    //====================================================================================================================
+	//====================================================================================================================
+    async addManifestScanData(data) {
+        try {
+            // Start a transaction
+            const result = await siiDb.transaction(async (trx) => {
+                // Insert data into 'scan_manifest' table
+                const [insertId] = await trx('scan_manifest').insert(data);
+                return insertId; // Return the inserted ID
+            });
+    
+            return result; // Return the inserted ID
+        } catch (error) {
+            console.error('Error in addManifestScanData:', error);
+            throw error; // Re-throw for higher-level error handling
+        }
+    }
+    async getManifestPart(manifest, part, plantId){
+        try {
+            const result = {
+                manifest: null,
+                part_no: null,
+                qty_per_kanban: null,
+                qty_kanban: null,
+                sum_kanban: null,
+                avg_proses: null,
+                unique_no: 'xxxxxxxx',
+                good: 0,
+            };
+    
+            // Query the shiroki_manifest_shiroki table
+            const [res1] = await siiDb('manifest_data')
+                .select([
+                    'manifest',
+                    'part_no',
+                    'unique_no',
+                    'qty_per_kanban',
+                    siiDb.raw('SUM(qty_kanban) AS cqty_kanban'),
+                    siiDb.raw('SUM(qty_kanban * qty_per_kanban) AS sum_kanban'),
+                    siiDb.raw('AVG(proses) AS avg_proses'),
+                ])
+                .where('plant_id', plantId)
+                .andWhere('manifest', manifest)
+                .where(function () {
+                    // this.where('part_no', part).orWhere('part_nox', part);
+                    this.where('part_no', part);
+                })
+                .andWhere('isvalid', 1)
+                .groupBy('manifest')
+                .groupBy('part_no');
+    
+            // Populate result object with data from the first query
+            if (res1) {
+                result.manifest = res1.manifest;
+                result.part_no = res1.part_no;
+                result.qty_per_kanban = res1.qty_per_kanban;
+                result.qty_kanban = res1.cqty_kanban;
+                result.sum_kanban = res1.sum_kanban;
+                result.avg_proses = res1.avg_proses;
+                result.unique_no = res1.unique_no;
+            }
+    
+            // Query the shiroki_scan_manifest table
+            const res2 = await siiDb('scan_manifest')
+                .count('* AS count')
+                .where('plant_id', plantId)
+                .andWhere('manifest_id', manifest)
+                .andWhere('scan_part', result.part_no)
+                .andWhere('result', 1)
+                // .andWhereRaw("scan_sii LIKE CONCAT('%', '-', ?)", [result.unique_no]);
+    
+            result.good = res2[0].count || 0;
+    
+            return result;
+        } catch (error) {
+            console.error('Error in getManifestPart:', error);
+            throw error; // Re-throw for higher-level error handling
+        }
+    };
+    async getManifestPartSii(manifest, part, sii, plantId){
+        try {
+            const result = {
+                manifest: null,
+                part_no: null,
+                // part_nox: null,
+                qty_per_kanban: null,
+                sum_kanban: null,
+                qty_kanban: null,
+                avg_proses: null,
+                unique_no: 'xxxxxxxxxxx',
+                good: 0,
+                shi: 0,
+            };
+    
+            // Query shiroki_manifest_shiroki table
+            const [res1] = await siiDb('manifest_data')
+                .select([
+                    'unique_no',
+                    'manifest',
+                    'part_no',
+                    // 'part_nox',
+                    siiDb.raw('SUM(qty_kanban) AS cqty_kanban'),
+                    'qty_per_kanban',
+                    siiDb.raw('SUM(qty_kanban * qty_per_kanban) AS sum_kanban'),
+                    siiDb.raw('AVG(proses) AS avg_proses'),
+                ])
+                .where('plant_id', plantId)
+                .andWhere('manifest', manifest)
+                .andWhere('part_no', part)
+                // .andWhere((builder) => {
+                //     builder.where('part_no', part).orWhere('part_nox', part);
+                // })
+                .andWhere('isvalid', 1)
+                .groupBy('manifest')
+                .groupBy('part_no');
+    
+            if (res1) {
+                result.manifest = res1.manifest;
+                result.part_no = res1.part_no;
+                // result.part_nox = res1.part_nox;
+                result.qty_per_kanban = res1.qty_per_kanban;
+                result.qty_kanban = res1.cqty_kanban;
+                result.sum_kanban = res1.sum_kanban;
+                result.avg_proses = res1.avg_proses;
+                result.unique_no = res1.unique_no;
+            }
+    
+            // Query shiroki_scan_manifest table
+            const [res2] = await siiDb('scan_manifest')
+                .count('* AS count')
+                .where('plant_id', plantId)
+                .andWhere('manifest_id', manifest)
+                .andWhere('scan_part', result.part_no)
+                // .andWhereRaw("scan_shiroki LIKE CONCAT('%-', ?)", [result.unique_no])
+                .andWhere('result', 1);
+    
+            result.good = res2.count || 0;
+    
+            // Query shiroki_master_shiroki table
+            const [res3] = await siiDb('master_data')
+                .count('* AS count')
+                .where('plant_id', plantId)
+                .andWhere('kanban_cus', result.part_no)
+                .andWhere('isvalid', 1)
+                // .andWhereRaw("kanban_sii LIKE CONCAT('%-', ?)", [result.unique_no])
+                .andWhere('kanban_sii', sii);
+    
+            result.shi = res3.count || 0;
+    
+            return result;
+        } catch (error) {
+            console.error('Error in getManifestPartShiroki:', error);
+            throw error; // Re-throw for higher-level error handling
+        }
+    };
+    async editManifestScanData(updateData, id){
+        try {
+            // Update the shiroki_scan_manifest table
+            await siiDb('scan_manifest')
+                .update(updateData)
+                .where({ id });
+    
+            return true; // Return true if the update is successful
+        } catch (error) {
+            console.error('Error in editManifestScanData:', error);
+            throw error; // Re-throw for higher-level error handling
+        }
+    };
+    async bulkEditManifestData(updateData, manifest, partNo, plantId){
+        try {
+            // Update the shiroki_manifest_shiroki table
+            await siiDb('manifest_data')
+                .update(updateData)
+                .where({
+                    manifest,
+                    part_no: partNo,
+                    plant_id: plantId,
+                });
+    
+            return true; // Return true if the update is successful
+        } catch (error) {
+            console.error('Error in bulkEditManifestData:', error);
+            throw error; // Re-throw for higher-level error handling
+        }
+    };
+    
     //====================================================================================================================
 	//====================================================================================================================
     //DATA KANBAN

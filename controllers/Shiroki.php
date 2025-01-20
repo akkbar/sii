@@ -489,327 +489,327 @@ class Shiroki extends BaseController{
 	// 		$this->loadThis('Nampaknya anda seorang hacker...');
 	// 	}
 	// }
-	function shiroki_proses_manifest(){
-		header("Content-type: text/json");
-		$manifest = $this->session->userdata('run_manifest');
-		$val = $this->shiroki_model->get_manifest_proses($manifest, $this->plant_id);
-		$this->session->set_userdata('proses_manifest', $val);
-		echo json_encode(array('val'=>$val));
-	}
-	function shiroki_submit_tutup_manifest(){
-		header("Content-type: text/json");
-		$manifest = $this->session->userdata('run_manifest');
-		$nama = $this->input->post('nama');
-		$pass = $this->input->post('pass');
-		$alasan = $this->input->post('alasan');
-		$key = $this->shiroki_model->get_admin($nama, $pass, $this->plant_id);
-		if(!empty($key)){
-			$array = array(
-				'nama'=>$nama,
-				'alasan'=>$alasan,
-				'tanggal'=>date('Y-m-d H:i:s'),
-				'kode'=>$manifest,
-				'plant_id'=>$this->plant_id
-			);
-			$this->shiroki_model->add_halt($array);
-			$this->session->unset_userdata('run_manifest');
-			echo json_encode(array('note'=>1));
-		}else{
-			echo json_encode(array('note'=>'invalid user and pass'));
-		}
-	}
-	function shiroki_manifest_cancel(){
-		if($this->session->userdata('proses_manifest') == 100){
-			$this->session->unset_userdata('run_manifest');
-			redirect('shiroki_manifest_run');
-		}else{
-			redirect('shiroki_manifest_ongoing');
-		}
-	}
-	function shiroki_manifest_table(){
-		$manifest = $this->session->userdata('run_manifest');
-		if(!empty($manifest)){
-			$data['manifest'] = $manifest;
-			$get_table = $this->shiroki_model->get_manifest_table($manifest, $this->plant_id);
-			if(!empty($get_table)){
-				$data['manifest_table'] = $get_table;
-				$this->load->view("shiroki/shiroki_manifest_table", $data);
-			}else{
-				$this->session->unset_userdata('run_manifest');
-				echo '<h1>Data Manifest tidak ditemukan!</h1>';
-			}
-		}else{
-			echo '<h1>Data Manifest tidak ditemukan!</h1>';
-		}
-	}
-	function shiroki_manifest_ongoing(){
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
-				$manifest = $this->session->userdata('run_manifest');
-				$modul = $this->shiroki_excel_model->get_alarm_module(1, $this->plant_id);
-				if(!empty($modul)){
-					$this->session->set_userdata('use_alarm', $modul->unit_ip);
-					$data['alarm'] = $modul->unit_ip;
-				}
-				if(!empty($manifest)){
-					$data['manifest'] = $manifest;
-					$get_table = $this->shiroki_model->get_manifest_table($manifest, $this->plant_id);
-					if(!empty($get_table)){
-						$data['scan_salah'] = $this->session->userdata('scan_salah');
-						$data['manifest_table'] = $get_table;
-						$this->global['pageTitle'] = 'Proses Manifest';
-						$this->global['unlock'] = 1;
-						$this->loadViews("shiroki/shiroki_manifest_ongoing", $this->global, $data, NULL);
-					}else{
-						$this->session->unset_userdata('run_manifest');
-						redirect('shiroki_manifest_run');
-					}
-				}else{
-					redirect('shiroki_manifest_run');
-				}
-			}else{
-				$this->loadThis('Hanya Admin atau Operator yang dapat mengakses fitur ini.');
-			}
-		}else{
-			$this->loadThis('Nampaknya anda seorang hacker...');
-		}
-	}
-	function shiroki_cek_manifest(){
-		header("Content-type: text/json");
-		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-		if(!empty($user_role)){
-			if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
-				$manifest = $this->input->post('manifest');
-				$alarm = $this->input->post('alarm');
-				$get_row = $this->shiroki_model->get_manifest_num($manifest, $this->plant_id);
-				if(!empty($get_row)){
-					if($get_row->prog == 100){
-						echo json_encode('fin');
-					}else{
-						$get_tabel = $this->shiroki_model->get_tabel_manifest_part_shiroki($manifest, $this->plant_id);
-						$a = 1;
-						$tabel = '<table class="table"><tr>
-						<th>PART NO.</th>
-						<th>UNIQUE NO.</th>
-						<th>PART NAME</th>
-						<th>KBN. SHIROKI</th></tr>';
-						if(!empty($get_tabel)){
-							foreach($get_tabel as $row){
-								if(empty($row->kanban_shi)){
-									$a = 2;
-									$tabel .= '<tr style="background-color:#f090a0"><td>'.$row->part_no.'</td><td>'.$row->unique_no.'</td><td>'.$row->part_name.'</td><td>BELUM TERDAFTAR</td></tr>';
-								}else{
-									$tabel .= '<tr><td>'.$row->part_no.'</td><td>'.$row->unique_no.'</td><td>'.$row->part_name.'</td><td>'.$row->kanban_shi.'</td></tr>';	
-								}
-							}
-						}
-						$tabel .= '</table>';
-						if($a == 2){
-							echo json_encode($tabel);
-						}else{
-							$this->session->set_userdata('run_manifest', $manifest);
-							$this->session->set_userdata('use_alarm', $alarm);
-							$array = array('last_access'=>$this->get_client_ip());
-							$this->shiroki_model->edit_alarm_byip($array, $alarm, $this->plant_id);
-							echo json_encode('good');
-						}
-					}
-				}else{
-					echo json_encode('ng');
-				}
-			}else{
-				echo json_encode('ng');
-			}
-		}else{
-			echo json_encode('ng');
-		}
-	}
-	function shiroki_cek_part_manifest(){
-		header("Content-type: text/json");
-		if(!($this->session->has_userdata('scan_salah'))){
-			$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-			if(!empty($user_role)){
-				if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
-					$part = $this->input->post('part');
-					$manifest = $this->session->userdata('run_manifest');
-					$get_row = $this->shiroki_model->get_manifest_part($manifest, $part, $this->plant_id);
-					// echo var_dump($get_row);
-					if(!empty($get_row)){
-						if($get_row['manifest'] == $manifest){
-							if($get_row['good'] >= $get_row['qty_kanban']){
-								$array = array(
-									'manifest_id'=>$manifest,
-									'scan_part'=>$get_row['part_no'],
-									'scanby'=>$this->user_id,
-									'plant_id'=>$this->plant_id,
-									'result'=>2
-								);
-								$add = $this->shiroki_model->add_manifest_scan_data($array);
-								$point = array('note'=>'fin', 'sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
-								echo json_encode($point);
-							}else{
-								$array = array(
-									'manifest_id'=>$manifest,
-									'scan_part'=>$get_row['part_no'],
-									'scanby'=>$this->user_id,
-									'plant_id'=>$this->plant_id,
-									'result'=>2
-								);
-								$add = $this->shiroki_model->add_manifest_scan_data($array);
-								$point = array('note'=>'good', 'scan_salah'=>0);
-								echo json_encode($point);
-							}
-						}else{
-							$array = array(
-								'manifest_id'=>$manifest,
-								'scan_part'=>$part,
-								'scanby'=>$this->user_id,
-								'plant_id'=>$this->plant_id,
-								'result'=>0
-							);
-							$add = $this->shiroki_model->add_manifest_scan_data($array);
-							$this->session->set_userdata('scan_salah', $add);
-							$point = array('note'=>'Kode ter-scan tidak sesuai dengan Manifest!', 'scan_salah'=>1);
-							echo json_encode($point);
-						}
-					}else{
-						$array = array(
-							'manifest_id'=>$manifest,
-							'scan_part'=>$part,
-							'scanby'=>$this->user_id,
-							'plant_id'=>$this->plant_id,
-							'result'=>0
-						);
-						$add = $this->shiroki_model->add_manifest_scan_data($array);
-						$this->session->set_userdata('scan_salah', $add);
-						$point = array('note'=>'Kode ter-scan tidak sesuai dengan Manifest!', 'scan_salah'=>1);
-						echo json_encode($point);
-					}	
-				}else{
-					$point = array('note'=>'Ditolak', 'scan_salah'=>0);
-					echo json_encode($point);
-				}
-			}else{
-				$point = array('note'=>'Ditolak', 'scan_salah'=>0);
-				echo json_encode($point);
-			}
-		}else{
-			$point = array('note'=>'Ditolak, lengkapi penyebab salah scan sebelumnya terlebih dahulu', 'scan_salah'=>1);
-			echo json_encode($point);
-		}	
-	}
-	function shiroki_cek_salah_scan(){
-		header("Content-type: text/json");
-		if(!($this->session->has_userdata('scan_salah'))){
-			$point = array('scan_salah'=>0);
-			echo json_encode($point);
-		}else{
-			$point = array('scan_salah'=>1);
-			echo json_encode($point);
-		}
-	}
-	function shiroki_submit_salah_scan(){
-		header("Content-type: text/json");
-		if(!($this->session->has_userdata('scan_salah'))){
-			$point = array('note'=>'ok');
-			echo json_encode($point);
-		}else{
-			$salah = $this->input->post('salah');
-			if(!empty($salah)){
-				$array = array('note'=>$salah);
-				$update = $this->shiroki_model->edit_manifest_scan_data($array, $this->session->userdata('scan_salah'));
-				$this->session->unset_userdata('scan_salah');
-				$point = array('note'=>'ok');
-				echo json_encode($point);
-			}else{
-				$point = array('note'=>'ng');
-				echo json_encode($point);
-			}
-		}
-	}
-	function shiroki_cek_shiroki_manifest(){
-		header("Content-type: text/json");
-		if(!($this->session->has_userdata('scan_salah'))){
-			$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
-			if(!empty($user_role)){
-				if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
-					$part = $this->input->post('part');
-					$shiroki = $this->input->post('shiroki');
-					$manifest = $this->session->userdata('run_manifest');
-					$get_row = $this->shiroki_model->get_manifest_part_shiroki($manifest, $part, $shiroki, $this->plant_id);
-					// echo var_dump($get_row);
-					if(!empty($get_row)){
-						if(!empty($get_row['manifest']) and $get_row['shi'] > 0){
-							if($get_row['good'] >= $get_row['qty_kanban']){
-								$array = array(
-									'manifest_id'=>$manifest,
-									'scan_part'=>$get_row['part_no'],
-									'scan_shiroki'=>$shiroki,
-									'scanby'=>$this->user_id,
-									'plant_id'=>$this->plant_id,
-									'result'=>0
-								);
-								$add = $this->shiroki_model->add_manifest_scan_data($array);
-								$point = array('note'=>'Part ini sudah ter-scan komplit!','sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
-								echo json_encode($point);
-							}else{
-								$array = array(
-									'manifest_id'=>$manifest,
-									'scan_part'=>$get_row['part_no'],
-									'scan_shiroki'=>$shiroki,
-									'scanby'=>$this->user_id,
-									'plant_id'=>$this->plant_id,
-									'result'=>1
-								);
-								$add = $this->shiroki_model->add_manifest_scan_data($array);
-								$proses = (($get_row['good'] + 1)* 100)/$get_row['qty_kanban'];
-								$array_manifest = array('proses'=>$proses);
-								$update = $this->shiroki_model->bulkedit_manifest_data($array_manifest, $manifest, $get_row['part_no'], $this->plant_id);
-								$point = array('note'=>'good','sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
-								echo json_encode($point);
-							}
-						}else{
-							$array = array(
-								'manifest_id'=>$manifest,
-								'scan_part'=>$get_row['part_no'],
-								'scan_shiroki'=>$shiroki,
-								'scanby'=>$this->user_id,
-								'plant_id'=>$this->plant_id,
-								'result'=>0
-							);
-							$add = $this->shiroki_model->add_manifest_scan_data($array);
-							$this->session->set_userdata('scan_salah', $add);
-							$point = array('note'=>'Kode ter-scan tidak sesuai dengan Kanban Customer!', 'scan_salah'=>1);
-							echo json_encode($point);
-						}
-					}else{
-						$array = array(
-							'manifest_id'=>$manifest,
-							'scan_part'=>$part,
-							'scan_shiroki'=>$shiroki,
-							'scanby'=>$this->user_id,
-							'plant_id'=>$this->plant_id,
-							'result'=>2
-						);
-						$add = $this->shiroki_model->add_manifest_scan_data($array);
-						$this->session->set_userdata('scan_salah', $add);
-						$point = array('note'=>'Kode ter-scan tidak sesuai dengan Kanban Customer!', 'scan_salah'=>1);
-						echo json_encode($point);
-					}
-				}else{
-					$point = array('note'=>'Ditolak', 'scan_salah'=>0);
-					echo json_encode($point);
-				}
-			}else{
-				$point = array('note'=>'Ditolak', 'scan_salah'=>0);
-				echo json_encode($point);
-			}
-		}else{
-			$point = array('note'=>'Ditolak, lengkapi penyebab salah scan sebelumnya terlebih dahulu', 'scan_salah'=>1);
-			echo json_encode($point);
-		}
-	}
+	// function shiroki_proses_manifest(){
+	// 	header("Content-type: text/json");
+	// 	$manifest = $this->session->userdata('run_manifest');
+	// 	$val = $this->shiroki_model->get_manifest_proses($manifest, $this->plant_id);
+	// 	$this->session->set_userdata('proses_manifest', $val);
+	// 	echo json_encode(array('val'=>$val));
+	// }
+	// function shiroki_submit_tutup_manifest(){
+	// 	header("Content-type: text/json");
+	// 	$manifest = $this->session->userdata('run_manifest');
+	// 	$nama = $this->input->post('nama');
+	// 	$pass = $this->input->post('pass');
+	// 	$alasan = $this->input->post('alasan');
+	// 	$key = $this->shiroki_model->get_admin($nama, $pass, $this->plant_id);
+	// 	if(!empty($key)){
+	// 		$array = array(
+	// 			'nama'=>$nama,
+	// 			'alasan'=>$alasan,
+	// 			'tanggal'=>date('Y-m-d H:i:s'),
+	// 			'kode'=>$manifest,
+	// 			'plant_id'=>$this->plant_id
+	// 		);
+	// 		$this->shiroki_model->add_halt($array);
+	// 		$this->session->unset_userdata('run_manifest');
+	// 		echo json_encode(array('note'=>1));
+	// 	}else{
+	// 		echo json_encode(array('note'=>'invalid user and pass'));
+	// 	}
+	// }
+	// function shiroki_manifest_cancel(){
+	// 	if($this->session->userdata('proses_manifest') == 100){
+	// 		$this->session->unset_userdata('run_manifest');
+	// 		redirect('shiroki_manifest_run');
+	// 	}else{
+	// 		redirect('shiroki_manifest_ongoing');
+	// 	}
+	// }
+	// function shiroki_manifest_table(){
+	// 	$manifest = $this->session->userdata('run_manifest');
+	// 	if(!empty($manifest)){
+	// 		$data['manifest'] = $manifest;
+	// 		$get_table = $this->shiroki_model->get_manifest_table($manifest, $this->plant_id);
+	// 		if(!empty($get_table)){
+	// 			$data['manifest_table'] = $get_table;
+	// 			$this->load->view("shiroki/shiroki_manifest_table", $data);
+	// 		}else{
+	// 			$this->session->unset_userdata('run_manifest');
+	// 			echo '<h1>Data Manifest tidak ditemukan!</h1>';
+	// 		}
+	// 	}else{
+	// 		echo '<h1>Data Manifest tidak ditemukan!</h1>';
+	// 	}
+	// }
+	// function shiroki_manifest_ongoing(){
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
+	// 			$manifest = $this->session->userdata('run_manifest');
+	// 			$modul = $this->shiroki_excel_model->get_alarm_module(1, $this->plant_id);
+	// 			if(!empty($modul)){
+	// 				$this->session->set_userdata('use_alarm', $modul->unit_ip);
+	// 				$data['alarm'] = $modul->unit_ip;
+	// 			}
+	// 			if(!empty($manifest)){
+	// 				$data['manifest'] = $manifest;
+	// 				$get_table = $this->shiroki_model->get_manifest_table($manifest, $this->plant_id);
+	// 				if(!empty($get_table)){
+	// 					$data['scan_salah'] = $this->session->userdata('scan_salah');
+	// 					$data['manifest_table'] = $get_table;
+	// 					$this->global['pageTitle'] = 'Proses Manifest';
+	// 					$this->global['unlock'] = 1;
+	// 					$this->loadViews("shiroki/shiroki_manifest_ongoing", $this->global, $data, NULL);
+	// 				}else{
+	// 					$this->session->unset_userdata('run_manifest');
+	// 					redirect('shiroki_manifest_run');
+	// 				}
+	// 			}else{
+	// 				redirect('shiroki_manifest_run');
+	// 			}
+	// 		}else{
+	// 			$this->loadThis('Hanya Admin atau Operator yang dapat mengakses fitur ini.');
+	// 		}
+	// 	}else{
+	// 		$this->loadThis('Nampaknya anda seorang hacker...');
+	// 	}
+	// }
+	// function shiroki_cek_manifest(){
+	// 	header("Content-type: text/json");
+	// 	$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 	if(!empty($user_role)){
+	// 		if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
+	// 			$manifest = $this->input->post('manifest');
+	// 			$alarm = $this->input->post('alarm');
+	// 			$get_row = $this->shiroki_model->get_manifest_num($manifest, $this->plant_id);
+	// 			if(!empty($get_row)){
+	// 				if($get_row->prog == 100){
+	// 					echo json_encode('fin');
+	// 				}else{
+	// 					$get_tabel = $this->shiroki_model->get_tabel_manifest_part_shiroki($manifest, $this->plant_id);
+	// 					$a = 1;
+	// 					$tabel = '<table class="table"><tr>
+	// 					<th>PART NO.</th>
+	// 					<th>UNIQUE NO.</th>
+	// 					<th>PART NAME</th>
+	// 					<th>KBN. SHIROKI</th></tr>';
+	// 					if(!empty($get_tabel)){
+	// 						foreach($get_tabel as $row){
+	// 							if(empty($row->kanban_shi)){
+	// 								$a = 2;
+	// 								$tabel .= '<tr style="background-color:#f090a0"><td>'.$row->part_no.'</td><td>'.$row->unique_no.'</td><td>'.$row->part_name.'</td><td>BELUM TERDAFTAR</td></tr>';
+	// 							}else{
+	// 								$tabel .= '<tr><td>'.$row->part_no.'</td><td>'.$row->unique_no.'</td><td>'.$row->part_name.'</td><td>'.$row->kanban_shi.'</td></tr>';	
+	// 							}
+	// 						}
+	// 					}
+	// 					$tabel .= '</table>';
+	// 					if($a == 2){
+	// 						echo json_encode($tabel);
+	// 					}else{
+	// 						$this->session->set_userdata('run_manifest', $manifest);
+	// 						$this->session->set_userdata('use_alarm', $alarm);
+	// 						$array = array('last_access'=>$this->get_client_ip());
+	// 						$this->shiroki_model->edit_alarm_byip($array, $alarm, $this->plant_id);
+	// 						echo json_encode('good');
+	// 					}
+	// 				}
+	// 			}else{
+	// 				echo json_encode('ng');
+	// 			}
+	// 		}else{
+	// 			echo json_encode('ng');
+	// 		}
+	// 	}else{
+	// 		echo json_encode('ng');
+	// 	}
+	// }
+	// function shiroki_cek_part_manifest(){
+	// 	header("Content-type: text/json");
+	// 	if(!($this->session->has_userdata('scan_salah'))){
+	// 		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 		if(!empty($user_role)){
+	// 			if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
+	// 				$part = $this->input->post('part');
+	// 				$manifest = $this->session->userdata('run_manifest');
+	// 				$get_row = $this->shiroki_model->get_manifest_part($manifest, $part, $this->plant_id);
+	// 				// echo var_dump($get_row);
+	// 				if(!empty($get_row)){
+	// 					if($get_row['manifest'] == $manifest){
+	// 						if($get_row['good'] >= $get_row['qty_kanban']){
+	// 							$array = array(
+	// 								'manifest_id'=>$manifest,
+	// 								'scan_part'=>$get_row['part_no'],
+	// 								'scanby'=>$this->user_id,
+	// 								'plant_id'=>$this->plant_id,
+	// 								'result'=>2
+	// 							);
+	// 							$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 							$point = array('note'=>'fin', 'sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
+	// 							echo json_encode($point);
+	// 						}else{
+	// 							$array = array(
+	// 								'manifest_id'=>$manifest,
+	// 								'scan_part'=>$get_row['part_no'],
+	// 								'scanby'=>$this->user_id,
+	// 								'plant_id'=>$this->plant_id,
+	// 								'result'=>2
+	// 							);
+	// 							$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 							$point = array('note'=>'good', 'scan_salah'=>0);
+	// 							echo json_encode($point);
+	// 						}
+	// 					}else{
+	// 						$array = array(
+	// 							'manifest_id'=>$manifest,
+	// 							'scan_part'=>$part,
+	// 							'scanby'=>$this->user_id,
+	// 							'plant_id'=>$this->plant_id,
+	// 							'result'=>0
+	// 						);
+	// 						$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 						$this->session->set_userdata('scan_salah', $add);
+	// 						$point = array('note'=>'Kode ter-scan tidak sesuai dengan Manifest!', 'scan_salah'=>1);
+	// 						echo json_encode($point);
+	// 					}
+	// 				}else{
+	// 					$array = array(
+	// 						'manifest_id'=>$manifest,
+	// 						'scan_part'=>$part,
+	// 						'scanby'=>$this->user_id,
+	// 						'plant_id'=>$this->plant_id,
+	// 						'result'=>0
+	// 					);
+	// 					$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 					$this->session->set_userdata('scan_salah', $add);
+	// 					$point = array('note'=>'Kode ter-scan tidak sesuai dengan Manifest!', 'scan_salah'=>1);
+	// 					echo json_encode($point);
+	// 				}	
+	// 			}else{
+	// 				$point = array('note'=>'Ditolak', 'scan_salah'=>0);
+	// 				echo json_encode($point);
+	// 			}
+	// 		}else{
+	// 			$point = array('note'=>'Ditolak', 'scan_salah'=>0);
+	// 			echo json_encode($point);
+	// 		}
+	// 	}else{
+	// 		$point = array('note'=>'Ditolak, lengkapi penyebab salah scan sebelumnya terlebih dahulu', 'scan_salah'=>1);
+	// 		echo json_encode($point);
+	// 	}	
+	// }
+	// function shiroki_cek_salah_scan(){
+	// 	header("Content-type: text/json");
+	// 	if(!($this->session->has_userdata('scan_salah'))){
+	// 		$point = array('scan_salah'=>0);
+	// 		echo json_encode($point);
+	// 	}else{
+	// 		$point = array('scan_salah'=>1);
+	// 		echo json_encode($point);
+	// 	}
+	// }
+	// function shiroki_submit_salah_scan(){
+	// 	header("Content-type: text/json");
+	// 	if(!($this->session->has_userdata('scan_salah'))){
+	// 		$point = array('note'=>'ok');
+	// 		echo json_encode($point);
+	// 	}else{
+	// 		$salah = $this->input->post('salah');
+	// 		if(!empty($salah)){
+	// 			$array = array('note'=>$salah);
+	// 			$update = $this->shiroki_model->edit_manifest_scan_data($array, $this->session->userdata('scan_salah'));
+	// 			$this->session->unset_userdata('scan_salah');
+	// 			$point = array('note'=>'ok');
+	// 			echo json_encode($point);
+	// 		}else{
+	// 			$point = array('note'=>'ng');
+	// 			echo json_encode($point);
+	// 		}
+	// 	}
+	// }
+	// function shiroki_cek_shiroki_manifest(){
+	// 	header("Content-type: text/json");
+	// 	if(!($this->session->has_userdata('scan_salah'))){
+	// 		$user_role = $this->shiroki_model->get_user_role($this->user_id, $this->plant_id);
+	// 		if(!empty($user_role)){
+	// 			if($user_role->role_id == 1 or $user_role->role_id == 2 or $user_role->useradmin > 0){
+	// 				$part = $this->input->post('part');
+	// 				$shiroki = $this->input->post('shiroki');
+	// 				$manifest = $this->session->userdata('run_manifest');
+	// 				$get_row = $this->shiroki_model->get_manifest_part_shiroki($manifest, $part, $shiroki, $this->plant_id);
+	// 				// echo var_dump($get_row);
+	// 				if(!empty($get_row)){
+	// 					if(!empty($get_row['manifest']) and $get_row['shi'] > 0){
+	// 						if($get_row['good'] >= $get_row['qty_kanban']){
+	// 							$array = array(
+	// 								'manifest_id'=>$manifest,
+	// 								'scan_part'=>$get_row['part_no'],
+	// 								'scan_shiroki'=>$shiroki,
+	// 								'scanby'=>$this->user_id,
+	// 								'plant_id'=>$this->plant_id,
+	// 								'result'=>0
+	// 							);
+	// 							$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 							$point = array('note'=>'Part ini sudah ter-scan komplit!','sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
+	// 							echo json_encode($point);
+	// 						}else{
+	// 							$array = array(
+	// 								'manifest_id'=>$manifest,
+	// 								'scan_part'=>$get_row['part_no'],
+	// 								'scan_shiroki'=>$shiroki,
+	// 								'scanby'=>$this->user_id,
+	// 								'plant_id'=>$this->plant_id,
+	// 								'result'=>1
+	// 							);
+	// 							$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 							$proses = (($get_row['good'] + 1)* 100)/$get_row['qty_kanban'];
+	// 							$array_manifest = array('proses'=>$proses);
+	// 							$update = $this->shiroki_model->bulkedit_manifest_data($array_manifest, $manifest, $get_row['part_no'], $this->plant_id);
+	// 							$point = array('note'=>'good','sig'=>'good:'.$get_row['good'].' all:'.$get_row['qty_kanban'], 'scan_salah'=>0);
+	// 							echo json_encode($point);
+	// 						}
+	// 					}else{
+	// 						$array = array(
+	// 							'manifest_id'=>$manifest,
+	// 							'scan_part'=>$get_row['part_no'],
+	// 							'scan_shiroki'=>$shiroki,
+	// 							'scanby'=>$this->user_id,
+	// 							'plant_id'=>$this->plant_id,
+	// 							'result'=>0
+	// 						);
+	// 						$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 						$this->session->set_userdata('scan_salah', $add);
+	// 						$point = array('note'=>'Kode ter-scan tidak sesuai dengan Kanban Customer!', 'scan_salah'=>1);
+	// 						echo json_encode($point);
+	// 					}
+	// 				}else{
+	// 					$array = array(
+	// 						'manifest_id'=>$manifest,
+	// 						'scan_part'=>$part,
+	// 						'scan_shiroki'=>$shiroki,
+	// 						'scanby'=>$this->user_id,
+	// 						'plant_id'=>$this->plant_id,
+	// 						'result'=>2
+	// 					);
+	// 					$add = $this->shiroki_model->add_manifest_scan_data($array);
+	// 					$this->session->set_userdata('scan_salah', $add);
+	// 					$point = array('note'=>'Kode ter-scan tidak sesuai dengan Kanban Customer!', 'scan_salah'=>1);
+	// 					echo json_encode($point);
+	// 				}
+	// 			}else{
+	// 				$point = array('note'=>'Ditolak', 'scan_salah'=>0);
+	// 				echo json_encode($point);
+	// 			}
+	// 		}else{
+	// 			$point = array('note'=>'Ditolak', 'scan_salah'=>0);
+	// 			echo json_encode($point);
+	// 		}
+	// 	}else{
+	// 		$point = array('note'=>'Ditolak, lengkapi penyebab salah scan sebelumnya terlebih dahulu', 'scan_salah'=>1);
+	// 		echo json_encode($point);
+	// 	}
+	// }
 	// function shiroki_setting(){
 	// 	$this->global['pageTitle'] = 'User Setting';
 	// 	$this->loadViews("shiroki/shiroki_setting", $this->global, NULL, NULL);
@@ -1064,13 +1064,13 @@ class Shiroki extends BaseController{
 	// 		$this->loadThis('Fitur ini hanya dapat diakses admin');
 	// 	}
 	// }
-	function shiroki_auto_remove(){
-		$update = $this->shiroki_model->delete_manifest_3hari(date('Y-m-d H:i:s', strtotime('-5 day')), $this->plant_id);
-		$update = $this->shiroki_model->delete_scan_7hari(date('Y-m-d H:i:s', strtotime('-10 day')), $this->plant_id);
-		$array = array('isvalid'=>0);
-		$update = $this->shiroki_model->edit_manifest_5hari($array, date('Y-m-d H:i:s', strtotime('-3 day')), $this->plant_id);
-		return true;
-	}
+	// function shiroki_auto_remove(){
+	// 	$update = $this->shiroki_model->delete_manifest_3hari(date('Y-m-d H:i:s', strtotime('-5 day')), $this->plant_id);
+	// 	$update = $this->shiroki_model->delete_scan_7hari(date('Y-m-d H:i:s', strtotime('-10 day')), $this->plant_id);
+	// 	$array = array('isvalid'=>0);
+	// 	$update = $this->shiroki_model->edit_manifest_5hari($array, date('Y-m-d H:i:s', strtotime('-3 day')), $this->plant_id);
+	// 	return true;
+	// }
 	// function shiroki_log_manifest($manifest){
 	// 	$get_manifest = $this->shiroki_model->get_manifest_table($this->encrypt_model->decrypt20($manifest), $this->plant_id);
 	// 	if(!empty($get_manifest)){

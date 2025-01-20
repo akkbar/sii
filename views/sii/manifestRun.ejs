@@ -1,0 +1,198 @@
+<%- include(headerPath) %>
+<script>
+    var audio_beep = new Audio('/audio/beep.mp3');
+    var audio_good = new Audio('/audio/good.mp3');
+    var audio_ng = new Audio('/audio/ng.mp3');
+    var manifest_100 = new Audio('/audio/manifest_ini_telah_selesai_diproses.mp3');
+    var manifest_404 = new Audio('/audio/kode_manifest_tidak_ditemukan.mp3');
+    var manifest_200 = new Audio('/audio/memproses_manifest.mp3');
+    var part_404 = new Audio('/audio/ditolak_silakan_coba_lagi.mp3');
+    var part_200 = new Audio('/audio/kode_diterima.mp3');
+    var part_100 = new Audio('/audio/kode_ini_telah_selesai_silakan_scan_kode_lainnya.mp3');
+    var kanbansii_200 = new Audio('/audio/kanban_diterima.mp3');
+    var manifest_ok = new Audio('/audio/seluruh_part_telah_selesai_terscan_silakan_tutup_manifest_ini_untuk_membuka_manifest_baru.mp3');
+    var manifest_502 = new Audio('/audio/ditemukan_kanban_yang_belum_terdaftar.mp3');
+</script>
+<div class="content-wrapper">
+	<section class="content-header">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <h1><i class="fa fa-upload"></i> Jalankan Manifest</h1>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="content">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-8 col-md-8 col-xs-12">
+                                    <label>Scan barcode Manifest untuk memulai/melanjutkan.</label>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="manual_interupt">
+                                            <label class="custom-control-label" for="manual_interupt"> Interupt Manual</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" id="manifest" class="form-control" autocomplete="off" placeholder="SCAN MANIFEST"/>
+                                </div>
+                                <div class="col-lg-4 col-md-4 col-xs-12">
+                                    <label>Modul Alarm.</label>
+                                    <%= data.alarm %>
+                                    <br>
+                                    <a href="/sii/listAlarm" class="btn btn-sm btn-primary">Load Alarm Module</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span id="reload_button"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+    $(document).ready(function () {
+		$(".sel2").select2({
+        	minimumResultsForSearch: 20
+		});
+	});
+    function holdabit(){
+        waiting = 1;
+    }
+    function nohold(){
+        waiting = 0;
+    }
+    var waiting = 0;
+    setInterval(function(){
+        if(waiting == 0){
+            keep_focus();
+        }
+    },1000);
+    $("#manifest").on('keyup', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            if(waiting == 0){
+                cek_manifest();
+            }
+        }
+    });
+    var switchStatus = false;
+    $("#manual_interupt").on('change', function() {
+        if ($(this).is(':checked')) {
+            switchStatus = $(this).is(':checked');
+            console.log(switchStatus);// To verify
+        }
+        else {
+            switchStatus = $(this).is(':checked');
+            console.log(switchStatus);// To verify
+            cek_manifest();
+        }
+    });
+
+    function cek_manifest(){
+        if(switchStatus == false){
+            var manifest = $('#manifest').val();
+            // audio_beep.play();
+            waiting = 1;
+            $('#reload_button').html('Checking...');
+            load_row();
+            $('#manifest').val('');
+        }
+    }
+    function keep_focus(){
+        $('#manifest').focus();
+    }
+    function load_row() {
+        var manifest = $('#manifest').val();
+        $('#reload_button').html('');
+
+        $.ajax({
+            type: "POST",
+            url: "/sii/cekManifest",
+            data: JSON.stringify({ manifest: manifest }),
+            contentType: "application/json", // Specify JSON content type
+            cache: false,
+            success: function (response) {
+                // Check response status
+                if (response.status === 'ng') {
+                    manifest_404.play(); // Play "not found" sound
+                    waiting = 0;
+                    $('#reload_button').html('Kode Manifest tidak ditemukan!');
+                } else if (response.status === 'fin') {
+                    manifest_100.play(); // Play "finished" sound
+                    waiting = 0;
+                    $('#reload_button').html('Manifest telah selesai diproses, periksa [data manifest] untuk detailnya');
+                } else if (response.status === 'good') {
+                    manifest_200.play(); // Play "success" sound
+                    setTimeout(function () {
+                        location.reload(); // Reload the page after 1 second
+                    }, 1000);
+                } else if (response.status === 'unregistered') {
+                    manifest_502.play(); // Play "unregistered parts" sound
+                    waiting = 0;
+                    $('#reload_button').html(response.table); // Display the returned table
+                } else {
+                    manifest_502.play(); // Play generic error sound
+                    waiting = 0;
+                    $('#reload_button').html('Unexpected response from the server.');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error during manifest check:', error);
+                manifest_502.play(); // Play error sound
+                waiting = 0;
+                $('#reload_button').html('An error occurred while processing the manifest.');
+            }
+        });
+    }
+    var delay = (function(){
+        var timer = 0;
+        return function(callback, ms){
+            clearTimeout (timer);
+            timer = setTimeout(callback, ms);
+        };
+    })();
+
+    $("#manifest").on("input", function() {
+        if(switchStatus == false){
+            delay(function(){
+                if ($("#manifest").val().length < 1) { //leng
+                    $("#manifest").val("");
+                }
+            }, 2000 ); //leng
+        }
+    });
+    function nyala_ok(){
+        triggerAlarm('1')
+    }
+    function nyala_err(){
+        triggerAlarm('2')
+    }
+    function offall(){
+        triggerAlarm('0')
+    }
+    function triggerAlarm(state) {
+        $.ajax({
+            type: "POST",
+            url: "/sii/triggerAlarm", // Node.js endpoint
+            data: JSON.stringify({ alarmState: state }), // Payload for the POST request
+            contentType: "application/json", // Specify JSON content type
+            cache: false,
+            success: function (response) {
+                console.log("Alarm successfully triggered:", response.message);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error triggering alarm:", error);
+            }
+        });
+    }
+    // const myInput = document.getElementById('manifest');
+    // myInput.onpaste = e => e.preventDefault();
+</script>
+<%- include(footerPath) %>

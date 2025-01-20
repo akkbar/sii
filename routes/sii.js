@@ -7,11 +7,23 @@ const authorizeRoles = require('../middlewares/authorizeRoles');
 router.get('/dashboard', isAuthenticated, siiController.getDashboard)
 
 router.get('/runManifest', isAuthenticated, siiController.runManifest)
+router.post('/cekManifest', isAuthenticated, siiController.cekManifest)
+router.get('/manifestOngoing', isAuthenticated, siiController.manifestOngoing)
+router.post('/prosesManifest', isAuthenticated, siiController.prosesManifest)
+router.post('/submitTutupManifest', isAuthenticated, siiController.submitTutupManifest)
+router.post('/manifestCancel', isAuthenticated, siiController.manifestCancel)
+router.get('/manifestTable', isAuthenticated, siiController.manifestTable)
+router.post('/cekPartManifest', isAuthenticated, siiController.cekPartManifest)
+router.post('/cekSiiManifest', isAuthenticated, siiController.cekSiiManifest)
+router.post('/cekSalahScan', isAuthenticated, siiController.cekSalahScan)
+router.post('/submitSalahScan', isAuthenticated, siiController.submitSalahScan)
+
+
 router.get('/listAlarm', isAuthenticated, siiController.listAlarm)
 router.post('/setAlarm', isAuthenticated, siiController.setAlarm)
 router.post('/cekModule', isAuthenticated, siiController.cekModule)
 router.post('/testModule', isAuthenticated, siiController.testModule)
-
+router.post('/triggerAlarm', isAuthenticated, siiController.triggerAlarm)
 
 router.get('/dataManifest', isAuthenticated, siiController.dataManifest)
 router.post('/dataManifest', isAuthenticated, siiController.dataManifestAjax)

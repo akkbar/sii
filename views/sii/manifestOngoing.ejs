@@ -1,0 +1,498 @@
+<%- include(headerPath) %>
+
+<script>
+    var part_501 = new Audio('/audio/terdeteksi_kesalahan_scan_sebelumnya_silakan_tuliskan_penyebab_salah_scan.mp3');
+    var part_333 = new Audio('/audio/terima_kasih.mp3');
+
+    var audio_beep = new Audio('/audio/beep.mp3');
+    var audio_good = new Audio('/audio/good.mp3');
+    var audio_ng = new Audio('/audio/ng.mp3');
+    var manifest_100 = new Audio('/audio/manifest_ini_telah_selesai_diproses.mp3');
+    var manifest_404 = new Audio('/audio/kode_manifest_tidak_ditemukan.mp3');
+    var manifest_200 = new Audio('/audio/memproses_manifest.mp3');
+    var part_404 = new Audio('/audio/ditolak_silakan_coba_lagi.mp3');
+    var part_200 = new Audio('/audio/kode_diterima.mp3');
+    var part_100 = new Audio('/audio/kode_ini_telah_selesai_silakan_scan_kode_lainnya.mp3');
+    var kanbansii_200 = new Audio('/audio/kanban_diterima.mp3');
+    var manifest_ok = new Audio('/audio/seluruh_part_telah_selesai_terscan_silakan_tutup_manifest_ini_untuk_membuka_manifest_baru.mp3');
+    var part_500 = new Audio('/audio/ditolak_tuliskan_penyebab_kesalahan_scan.mp3');
+    
+</script>
+<style>
+    #divf {
+        position: fixed; /* Fixed/sticky position */
+        bottom: 20px; /* Place the button at the bottom of the page */
+        right: 30px; /* Place the button 30px from the right */
+        z-index: 99; /* Make sure it does not overlap */
+        border: none; /* Remove borders */
+        outline: none; /* Remove outline */
+        /* padding: 15px; */
+        border-radius: 10px; /* Rounded corners */
+        font-size: 18px; /* Increase font size */
+        min-width: 400px;
+    }
+</style>
+<script>
+    function cek_proses() {
+        $.ajax({
+            type: "POST",
+            url: "/sii/prosesManifest",
+            cache: false,
+            success: function (response) {
+                // Check if the backend returned a success message
+                if (response.val === 100) {
+                    $('#ok_tutup').modal('show'); // Show the success modal
+                } else {
+                    // Show the NG modal for processes not 100%
+                    $('#ng_tutup').modal('show');
+                    $('#tutup_note').text(response.message || 'Proses belum 100%.'); // Display feedback
+                }
+            },
+            error: function (xhr) {
+                // Handle any errors from the backend
+                console.error('Error:', xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText);
+                $('#ng_tutup').modal('show');
+                $('#tutup_note').text(xhr.responseJSON ? xhr.responseJSON.message : 'An unexpected error occurred.');
+            }
+        });
+    }
+    function submit_tutup() {
+        const nama = $('#nama').val();
+        const pass = $('#pass').val();
+        const alasan = $('#alasan').val();
+
+        // Validate input fields
+        if (!nama || !pass || !alasan) {
+            $('#tutup_note').html('All fields are required.');
+            return;
+        }
+
+        // Send AJAX request to the backend
+        $.ajax({
+            type: "POST",
+            url: "/sii/submitTutupManifest", // Replace with your backend endpoint
+            contentType: "application/json", // Use JSON for the request
+            data: JSON.stringify({ nama, pass, alasan }), // Convert the data to JSON
+            cache: false,
+            success: function (response) {
+                if (response.note === 1) {
+                    // Redirect to the manifest run page on success
+                    window.location.href = "/sii/runManifest"; // Adjust to match your backend route
+                } else {
+                    // Display feedback message from the backend
+                    $('#tutup_note').html(response.note);
+                }
+            },
+            error: function (xhr) {
+                console.error('Error:', xhr.responseJSON ? xhr.responseJSON.note : xhr.statusText);
+                $('#tutup_note').html(xhr.responseJSON ? xhr.responseJSON.note : 'An unexpected error occurred.');
+            }
+        });
+    }
+
+</script>
+<div class="content-wrapper">
+	<section class="content-header">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <h1><i class="fa fa-upload"></i> Manifest <%= data.manifest %> <small class="float-right">Alarm: <%= data.alarm %> <span id="alarm_error"></span></small></h1>
+                    <button onclick="cek_proses()" class="btn btn-warning float-right"><i class="fa fa-times"></i> Tutup Manifest</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="modal fade" id="ok_tutup">
+        <div class="modal-dialog">
+            <div class="modal-content bg-primary">
+                <div class="modal-header">
+                    <h4 class="modal-title">Tutup Manifest</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    Proses Manifest 100%
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <a href="/sii/manifestCancel" class="btn btn-success float-right"><i class="fa fa-times"></i> Tutup Manifest</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ng_tutup">
+        <div class="modal-dialog">
+            <div class="modal-content bg-primary">
+                <div class="modal-header">
+                    <h4 class="modal-title">Tutup Manifest</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <tr>
+                            <td colspan="2">Proses belum 100%</td>
+                        </tr>
+                        <tr>
+                            <td>Nama</td>
+                            <td><input type="text" class="form-control" id="nama" required></td>
+                        </tr>
+                        <tr>
+                            <td>Pass</td>
+                            <td><input type="password" class="form-control" id="pass" required></td>
+                        </tr>
+                        <tr>
+                            <td>Alasan</td>
+                            <td><textarea type="text"rows="3" class="form-control" id="alasan" required></textarea></td>
+                        </tr>
+                    </table>
+                    <span class="text-red" id="tutup_note"></span>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button onclick="submit_tutup()" class="btn btn-success float-right"><i class="fa fa-times"></i> Tutup Manifest</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <section class="content">
+		<div class="content-fluid">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-xs-12">
+                    <div class="card" style="margin-bottom: 205px;">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12 col-12" id="manifest_table">
+                                
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<div class="card card-primary" id="divf">
+    <div class="card-header">
+        <h4 class="card-title">Scan Kanban Customer</h4>
+    </div>
+    <div class="card-body">
+        <input type="text" id="scan_part" class="form-control" autocomplete="off" placeholder="SCAN KANBAN CUSTOMER"/>
+        <span id="reload_button"></span>
+    </div>
+</div>
+<div class="modal fade" id="modal_sii">
+    <div class="modal-dialog">
+        <div class="modal-content bg-primary">
+            <div class="modal-header">
+                <h4 class="modal-title">Scan QR SII</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <label>Kanban SII</label>
+                <input type="text" id="scan_sii" class="form-control" autocomplete="off" placeholder="SCAN SII"/>
+                <span id="reload_sii"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_salah">
+    <div class="modal-dialog">
+        <div class="modal-content bg-danger">
+            <div class="modal-header">
+                <h4 class="modal-title">Note</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <label>Tuliskan penyebab kesalahan scan</label>
+                <textarea id="scan_salah" class="form-control" autocomplete="off" placeholder="Penyebab kesalahan scan"> </textarea>
+                <span id="reload_salah"></span>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="submit_salah()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var waiting = 0;
+    var scanpart = 0;
+    var valid_part = '';
+    var salah = 0;
+    var enable_cus = 1;
+    var enable_shi = 0;
+
+    halt = 0;
+    $('#ng_tutup').on('hidden.bs.modal', function () {
+        console.log('Modal is now hidden');
+        halt = 0;
+    });
+    $('#ng_tutup').on('shown.bs.modal', function () {
+        console.log('Modal is now shown');
+        halt = 1;
+    });
+    setInterval(function(){
+        if(waiting == 0 && scanpart == 0 && enable_cus == 1){
+            if(halt == 0){
+                keep_focus();
+            }
+        }
+        if(waiting == 0 && scanpart == 1 && enable_shi == 1){
+            if(halt == 0){
+                keep_focus2();
+            }
+        }
+        if(salah == 1){
+            $('#scan_salah').focus();
+        }
+    },1000);
+    $("#scan_part").on('keyup', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            if(waiting == 0 && scanpart == 0 && enable_cus == 1){
+                cek_part();
+            }
+        }
+    });
+    function cek_part(){
+        var part = $('#scan_part').val();
+        if ($("#scan_part").val().length > 1) { //leng
+            offall();
+            // audio_beep.play();
+            waiting = 1;
+            $('#reload_button').html('Checking...');
+            load_part();
+            $('#scan_part').val('');
+        }
+    }
+
+    $("#scan_part").on("input", function() {
+        delay(function(){
+            if ($("#scan_part").val().length < 1) { //leng
+                $("#scan_part").val("");
+            }
+        }, 2000 ); //leng
+    });
+    // const mypartInput = document.getElementById('scan_part');
+    // mypartInput.onpaste = e => e.preventDefault();
+
+    function keep_focus(){
+        $('#scan_part').focus();
+    }
+    function load_part(){
+        var part = $('#scan_part').val();
+        $('#reload_button').html('');
+        $.ajax({
+            type: "POST",
+            url: "/sii/cekPartManifest",
+            data: {
+                part: part
+            },
+            cache: false,
+            success: function(point){
+                if(point.scan_salah == 0){
+                    if(point.note != 'good' && point.note != 'fin'){
+                        part_404.play();
+                        $('#reload_button').html(point.note);
+                    }else if(point.note == 'fin'){
+                        part_100.play();
+                        $('#reload_button').html('Part ini sudah ter-scan komplit!');
+                    }else{
+                        scanpart = 1;
+                        valid_part = part;
+                        $('#reload_sii').html('');
+                        $('#modal_sii').modal('show');
+                        part_200.play();
+                        enable_shi = 1;
+                        nyala_ok();
+                    }
+                    waiting = 0;
+                }else{
+                    part_501.play();
+                    $('#modal_salah').modal('show');
+                    salah = 1;
+                    enable_cus = 0;
+                    nyala_err();
+                }
+            }
+        });
+    }
+    $("#scan_sii").on('keyup', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            if(waiting == 0 && scanpart == 1 && enable_shi == 1){
+                cek_sii();
+            }
+        }
+    });
+    function cek_sii(){
+        var sii = $('#scan_sii').val();
+        if ($("#scan_sii").val().length > 1) { //leng
+            offall();
+            // audio_beep.play();
+            waiting = 1;
+            $('#reload_sii').html('Checking...');
+            load_sii();
+            $('#scan_sii').val('');
+        }
+    }
+    $("#scan_sii").on("input", function() {
+        delay(function(){
+            if ($("#scan_sii").val().length < 1) { //leng
+                $("#scan_sii").val("");
+            }
+        }, 2000 ); //leng
+    });
+    // const myshiInput = document.getElementById('scan_sii');
+    // myshiInput.onpaste = e => e.preventDefault();
+
+    function keep_focus2(){
+        $('#scan_sii').focus();
+    }
+    function load_sii(){
+        var sii = $('#scan_sii').val();
+        $('#reload_sii').html('');
+        $.ajax({
+            type: "POST",
+            url: "/sii/cekSiiManifest",
+            data: {
+                part: valid_part,
+                sii: sii
+            },
+            cache: false,
+            success: function(point){
+                if(point.scan_salah == 0){
+                    if(point.note == 'good'){
+                        kanbansii_200.play();
+                        enable_shi = 0;
+                        enable_cus = 1;
+                        nyala_ok();
+                        setTimeout(function(){
+                            reload_manifest();
+                            $('#modal_sii').modal('hide');
+                        }, 2500);
+                    }else{
+                        $('#reload_sii').html(point.note);
+                        $('#scan_sii').val('');
+                        part_404.play();
+                    }
+                    waiting = 0;
+                }else{
+                    part_500.play();
+                    salah = 1;
+                    enable_shi = 0;
+                    enable_cus = 0;
+                    $('#modal_sii').modal('hide');
+                    $('#modal_salah').modal('show');
+                    nyala_err();
+                }
+            }
+        });
+    }
+    function cancel_part(){
+        $('#scan_part').val('');
+        valid_part = '';
+        waiting = 0;
+        scanpart = 0;
+        salah = 0;
+        enable_shi = 0;
+        enable_cus = 1;
+        offall();
+    }
+    $('#modal_sii').on('hidden.bs.modal', function () {
+        if(salah == 0){
+            cancel_part();
+        }
+    });
+    $('#modal_salah').on('hidden.bs.modal', function () {
+        cek_salah();
+    });
+    function cek_salah(){
+        $.ajax({
+            type: "POST",
+            url: "/sii/cekSalahScan",
+            cache: false,
+            success: function(point){
+                if(point.scan_salah == 1){
+                    waiting = 1;
+                    $('#modal_salah').modal('show');
+                    salah = 1;
+                    enable_shi = 0;
+                    enable_cus = 0;
+                    nyala_err();
+                }
+            }
+        });
+    }
+    function submit_salah(){
+        var scan_salah_txt = $('#scan_salah').val();
+        if(scan_salah_txt != '' && scan_salah_txt != null){
+            $.ajax({
+                type: "POST",
+                url: "/sii/submitSalahScan",
+                data: {
+                    salah: scan_salah_txt
+                },
+                cache: false,
+                success: function(point){
+                    if(point.note == 'ok'){
+                        $('#scan_salah').val('');
+                        part_333.play();
+                        $('#modal_salah').modal('hide');
+                        cancel_part();
+                        reload_manifest();
+                    }else{
+                        $('#reload_salah').html('Anda harus menuliskan penyebab kesalahan scan');            
+                    }
+                }
+            });
+        }else{
+            $('#reload_salah').html('Anda harus menuliskan penyebab kesalahan scan');
+        }
+    }
+    function reload_manifest(){
+        $('#manifest_table').load('/sii/manifestTable');
+        offall();
+    }
+    reload_manifest();
+
+
+    function nyala_ok(){
+        triggerAlarm('1')
+    }
+    function nyala_err(){
+        triggerAlarm('2')
+    }
+    function offall(){
+        triggerAlarm('0')
+    }
+    function triggerAlarm(state) {
+        $.ajax({
+            type: "POST",
+            url: "/sii/triggerAlarm", // Node.js endpoint
+            data: JSON.stringify({ alarmState: state }), // Payload for the POST request
+            contentType: "application/json", // Specify JSON content type
+            cache: false,
+            success: function (response) {
+                console.log("Alarm successfully triggered:", response.message);
+            },
+            error: function (xhr, status, error) {
+                $('#alarm_error').html = "Error triggering alarm" + error
+            }
+        });
+    }
+
+    var delay = (function(){
+        var timer = 0;
+        return function(callback, ms){
+            clearTimeout (timer);
+            timer = setTimeout(callback, ms);
+        };
+    })();
+</script>
+
+
+<%- include(footerPath) %>
