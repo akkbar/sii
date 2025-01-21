@@ -27,7 +27,7 @@ const connection = mysql.createPool(dbOptions);
 // Create a MySQL session store
 const sessionStore = new MySQLStore({}, connection);
 
-store.on('error', (error) => {
+sessionStore.on('error', (error) => {
   console.error('Session store error:', error);
 });
 
