@@ -18,7 +18,7 @@ exports.getDashboard = async (req, res) => {
     const allKanban = await siiModel.countAllKanban(plantId);
 
     // Simulate the `auto_remove` logic if needed
-    const x = 0//await autoRemove(plantId);
+    const x = await autoRemove(plantId);
 
     // Prepare data for rendering
     const data = {
