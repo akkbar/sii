@@ -1,4 +1,4 @@
-name: SUNCHIRIN-II
+name: sunchirin-ii
 services:
   mysql:
     image: mysql:8
