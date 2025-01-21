@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: OpenAIoT-mysql-password
       MYSQL_DATABASE: db_main
-      MYSQL_USER: openaiot-admin
+      MYSQL_USER: openaiotadmin
       MYSQL_PASSWORD: OpenAIoT-mysql-password
     volumes:
       - ./mysql-data:/var/lib/mysql
