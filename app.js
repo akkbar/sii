@@ -8,16 +8,24 @@ const userRoutes = require('./routes/user')
 const siiRoutes = require('./routes/sii')
 const http = require('http')
 const favicon = require('serve-favicon')
-const MongoDBStore = require('connect-mongodb-session')(session)
-const mongoose = require('./models/mongoDb')
+const MySQLStore = require('express-mysql-session')(session);
+const mysql = require('mysql2');
 
 const app = express()
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
 
-const store = new MongoDBStore({
-  uri: process.env.MONGO_URI,
-  collection: 'sessions',
-});
+const dbOptions = {
+  host: process.env.MAINDB_HOST || 'localhost',
+  user: process.env.MAINDB_USER || 'root',
+  port: process.env.MAINDB_PORT || 'root',
+  password: process.env.MAINDB_PASS || 'your-password',
+  database: process.env.MAINDB_DB || 'your-database',
+};
+
+const connection = mysql.createPool(dbOptions);
+
+// Create a MySQL session store
+const sessionStore = new MySQLStore({}, connection);
 
 store.on('error', (error) => {
   console.error('Session store error:', error);
@@ -28,7 +36,7 @@ app.use(
     secret: process.env.OPENAIOT_KEY, 
     resave: false, 
     saveUninitialized: false,
-    store: store,
+    store: sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 day in milliseconds
       secure: process.env.NODE_ENV === 'production',
@@ -88,7 +96,7 @@ server.listen(3001, '::', () => {
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
   try {
-    await mongoose.disconnect();
+    // await mongoose.disconnect();
     server.close(() => {
       console.log('Server closed');
       process.exit(0);

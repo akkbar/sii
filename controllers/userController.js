@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const mainModel = require('../models/mainModel');
 const mainValidator = require('../middlewares/mainValidate');
-const logError = require('../middlewares/errorlogger')
+// const logError = require('../middlewares/errorlogger')
 
 //==========================================================================================================================
 //==========================================================================================================================
@@ -18,7 +18,7 @@ exports.myUsers = async (req, res) => {
             res.render('500', { header: header, message: 'Invalid userdata, please re-login.' });
         }
     }catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/myUsers' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/myUsers' })
         return res.json({ success: false, message: 'Server error, please try again later'});
     }
 }
@@ -66,7 +66,7 @@ exports.changePass = async (req, res) => {
         return res.json({ success: true, message: result});
 
     }catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/changePass' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/changePass' })
         return res.json({ success: false, message: 'Server error, please try again later'});
     }
 }
@@ -175,7 +175,7 @@ exports.userListAjax = async (req, res) => {
 
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -204,7 +204,7 @@ exports.createProfile = async (req, res) => {
         await mainModel.addUserData(data)
         res.status(201).json({ message: 'Data added successfully' })
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/createProfile' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/createProfile' })
         res.status(500).json({ message: error.message })
     }
 }
@@ -215,7 +215,7 @@ exports.getProfile = async (req, res) => {
         const data = await mainModel.getUserDataById(id)
         res.status(201).json({ message: 'data read successfully', data: data })
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/getProfile' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/getProfile' })
         res.status(500).json({ message: error.message })
     }
 };
@@ -243,7 +243,7 @@ exports.updateUser = async (req, res) => {
         await mainModel.editUserDataById(req.body.editId, data)
         res.status(201).json({ message: 'Data edited successfully'})
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/updateUser' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/updateUser' })
         res.status(500).json({ message: error.message })
     }
 };
@@ -253,7 +253,7 @@ exports.removeUser = async (req, res) => {
         await mainModel.editUserDataById(req.body.id, data)
         res.status(201).json({ message: 'Data deleted successfully'})
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/removeUser' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/removeUser' })
         res.status(500).json({ message: error.message })
     }
 }

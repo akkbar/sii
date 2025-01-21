@@ -1,6 +1,6 @@
 const mainDb = require('../models/mainDb');
 const bcrypt = require('bcrypt');
-const ErrorLog = require('../models/errorlog');
+// const ErrorLog = require('../models/errorlog');
 
 exports.getLoginPage = (req, res) => {
     res.render('login', { errorMessage: null });
@@ -102,14 +102,15 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.errorLogs = async (req, res) => {
-    try {
-        const header = {pageTitle: 'Error Logs', user: req.session.user}
-        const errorLogs = await ErrorLog.find().sort({ timestamp: -1 });
-        const data = {
-            errorLogs: errorLogs
-        }
-        res.render('errorlogs', {header: header, data: data})
-    } catch (err) {
-        res.status(500).send('Error fetching error logs');
-    }
+    // try {
+    //     const header = {pageTitle: 'Error Logs', user: req.session.user}
+    //     const errorLogs = await ErrorLog.find().sort({ timestamp: -1 });
+    //     const data = {
+    //         errorLogs: errorLogs
+    //     }
+    //     res.render('errorlogs', {header: header, data: data})
+    // } catch (err) {
+    //     res.status(500).send('Error fetching error logs');
+    // }
+    redirect('/')
 }

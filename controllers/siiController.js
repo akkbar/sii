@@ -2,7 +2,7 @@ const siiModel = require('../models/siiModel')
 const bodyParser = require('body-parser');
 const os = require('os');
 const encryptModel = require('../models/encryptModel')
-const logError = require('../middlewares/errorlogger')
+// const logError = require('../middlewares/errorlogger')
 const moment = require('moment')
 const { exec, execSync } = require('child_process');
 
@@ -133,7 +133,7 @@ exports.monitorManifestAjax = async (req, res) => {
 
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -916,7 +916,7 @@ exports.dataManifestAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -925,7 +925,7 @@ exports.dataManifestInput = async (req, res) => {
         const header = {pageTitle: 'Input Manifest', user: req.session.user}
         res.render('sii/dataManifestInput', { header: header });
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestInput' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestInput' })
         res.status(500).send('Internal Server Error');
     }
 }
@@ -998,7 +998,7 @@ exports.dataManifestSubmit = async (req, res) => {
         }
         
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestSubmit' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestSubmit' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1146,7 +1146,7 @@ exports.logDataManifestAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/logDataManifestAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/logDataManifestAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1232,7 +1232,7 @@ exports.logScanAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1345,7 +1345,7 @@ exports.dataKanbanAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/dataKanbanAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/dataKanbanAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1534,7 +1534,7 @@ exports.haltKeyAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/haltKeyAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/haltKeyAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1665,7 +1665,7 @@ exports.manifestHaltAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/manifestHaltAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/manifestHaltAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1787,7 +1787,7 @@ exports.sampahAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/sampahAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/sampahAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1944,7 +1944,7 @@ exports.logManifestAjax = async (req, res) => {
         };
         res.json(output)
     } catch (error) {
-        await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        // await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
