@@ -953,7 +953,7 @@ exports.dataManifestSubmit = async (req, res) => {
             const outtime = row.extractedTexts[10]?.trim();
 
             for (let i = 11; i < row.extractedTexts.length; i += 7) {
-                const part_no = row.extractedTexts[i]?.trim();
+                const part_no = row.extractedTexts[i]?.trim().replace(/-/g, '');
                 const part_name = row.extractedTexts[i + 1]?.trim();
                 const unique_no = row.extractedTexts[i + 2]?.trim();
                 const box_type = row.extractedTexts[i + 3]?.trim();
