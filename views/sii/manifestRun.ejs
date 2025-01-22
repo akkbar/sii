@@ -145,7 +145,7 @@
             },
             error: function (xhr, status, error) {
                 console.error('Error during manifest check:', error);
-                manifest_502.play(); // Play error sound
+                manifest_404.play(); // Play error sound
                 waiting = 0;
                 $('#reload_button').html('An error occurred while processing the manifest.');
             }
