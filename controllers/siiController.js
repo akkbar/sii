@@ -134,6 +134,7 @@ exports.monitorManifestAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'userController/userListAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -917,6 +918,7 @@ exports.dataManifestAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -926,6 +928,7 @@ exports.dataManifestInput = async (req, res) => {
         res.render('sii/dataManifestInput', { header: header });
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestInput' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).send('Internal Server Error');
     }
 }
@@ -999,6 +1002,7 @@ exports.dataManifestSubmit = async (req, res) => {
         
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/dataManifestSubmit' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1147,6 +1151,7 @@ exports.logDataManifestAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/logDataManifestAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1233,6 +1238,7 @@ exports.logScanAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1346,6 +1352,7 @@ exports.dataKanbanAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/dataKanbanAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1535,6 +1542,7 @@ exports.haltKeyAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/haltKeyAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1666,6 +1674,7 @@ exports.manifestHaltAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/manifestHaltAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1788,6 +1797,7 @@ exports.sampahAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/sampahAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
@@ -1945,6 +1955,7 @@ exports.logManifestAjax = async (req, res) => {
         res.json(output)
     } catch (error) {
         // await logError('error', error.message, error.stack, { functionName: 'siiController/logManifestAjax' })
+        console.error(`${error.message}, ${error.stack}`)
         res.status(500).json({ error: 'An error occurred while fetching the data' })
     }
 }
